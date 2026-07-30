@@ -1,0 +1,38 @@
+{
+  "name": "making-diary-remotion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:push": "drizzle-kit push",
+    "worker": "tsx src/worker/index.ts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.502",
+    "@remotion/player": "4.0.502",
+    "@remotion/renderer": "4.0.502",
+    "bullmq": "6.0.0",
+    "drizzle-orm": "0.45.2",
+    "ioredis": "^5.8.2",
+    "next": "16.2.12",
+    "postgres": "^3.4.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.502",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "drizzle-kit": "0.31.8",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

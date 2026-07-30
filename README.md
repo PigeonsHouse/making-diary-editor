@@ -1,6 +1,35 @@
 # 製作日誌動画エディター
 
-日々の製作の動画を1週間単位で動画にする
+日々の製作記録を、VOICEVOXキャラクターの掛け合い動画にするWebエディターです。
+
+詳細な仕様と実装方針は[設計.md](./設計.md)を参照してください。
+
+## 起動
+
+1. `.env.example`を`.env`へコピーし、必要なら`GEMINI_API_KEY`を設定します。
+2. Docker Composeを起動します。
+
+```bash
+docker compose up --build
+```
+
+ブラウザで`http://localhost:3000`を開きます。同じLAN内の端末からは、ホストPCのIPアドレスとポート`3000`を指定します。
+
+ローカルでアプリだけを開発する場合は、PostgreSQL、Redis、VOICEVOXを起動したうえで次を実行します。
+
+```bash
+pnpm install
+pnpm dev
+```
+
+## 検証
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm build
+docker compose config
+```
 
 ## 出したいコンテンツ
 
