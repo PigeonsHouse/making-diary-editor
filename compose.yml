@@ -29,6 +29,7 @@ services:
       REDIS_URL: redis://redis:6379
       DATA_DIR: /data
       CHROMIUM_PATH: /usr/bin/chromium
+      APP_URL: http://app:3000
     volumes:
       - diary-data:/data
     depends_on:

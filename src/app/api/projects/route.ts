@@ -8,7 +8,7 @@ import {apiError} from "@/server/http";
 
 export async function GET() {
   const rows = await db.select().from(projects).orderBy(desc(projects.updatedAt));
-  return NextResponse.json(rows);
+  return NextResponse.json(rows.map((row) => ({...row, document: projectDocumentSchema.parse(row.document)})));
 }
 
 export async function POST(request: Request) {

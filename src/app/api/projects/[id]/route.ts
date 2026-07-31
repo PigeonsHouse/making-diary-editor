@@ -11,7 +11,7 @@ export async function GET(_: Request, context: Context) {
   const {id} = await context.params;
   const [row] = await db.select().from(projects).where(eq(projects.id, id));
   if (!row) return NextResponse.json({error: "プロジェクトが見つかりません"}, {status: 404});
-  return NextResponse.json(row);
+  return NextResponse.json({...row, document: projectDocumentSchema.parse(row.document)});
 }
 
 export async function PATCH(request: Request, context: Context) {

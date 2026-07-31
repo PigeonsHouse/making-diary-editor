@@ -1,7 +1,7 @@
 import {z} from "zod";
 
 export const voiceSettingsSchema = z.object({
-  styleId: z.number().int().nonnegative().default(0),
+  styleName: z.string().min(1).default("ノーマル"),
   speed: z.number().positive().default(1),
   pitch: z.number().default(0),
   intonation: z.number().nonnegative().default(1),
@@ -86,8 +86,7 @@ export const projectDocumentSchema = z.object({
   name: z.string().min(1),
   characterIds: z.array(z.string().uuid()).default([]),
   avatarLayout: z.object({
-    basePeekOffsetPx: z.number().nonnegative().default(180),
-    stackStepPx: z.number().nonnegative().default(120),
+    peekOffsetPx: z.number().nonnegative().default(180),
   }),
   wishList: wishListSchema.nullable().default(null),
   diaries: z.array(diaryEntrySchema).default([]),

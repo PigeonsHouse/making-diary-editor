@@ -34,8 +34,10 @@ export async function POST(request: Request) {
       kind,
       originalName: file.name,
       originalPath,
+      normalizedPath: kind === "psd" ? originalPath : null,
+      status: kind === "psd" ? "ready" : "processing",
     }).returning();
-    await assetQueue.add("normalize", {assetId: id}, {jobId: id, removeOnComplete: 100});
+    if (kind !== "psd") await assetQueue.add("normalize", {assetId: id}, {jobId: id, removeOnComplete: 100});
     return NextResponse.json(asset, {status: 202});
   } catch (error) {
     return apiError(error);

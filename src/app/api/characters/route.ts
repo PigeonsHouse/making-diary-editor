@@ -8,7 +8,7 @@ import {apiError} from "@/server/http";
 
 export async function GET() {
   const rows = await db.select().from(characters).orderBy(asc(characters.createdAt));
-  return NextResponse.json(rows);
+  return NextResponse.json(rows.map((row) => ({...row, data: characterSchema.parse(row.data)})));
 }
 
 export async function POST(request: Request) {

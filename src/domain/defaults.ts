@@ -49,7 +49,7 @@ export const createDiary = (): DiaryEntry => ({
 export const createProject = (name = "新しい製作日誌"): ProjectDocument => ({
   name,
   characterIds: [],
-  avatarLayout: {basePeekOffsetPx: 180, stackStepPx: 120},
+  avatarLayout: {peekOffsetPx: 180},
   wishList: null,
   diaries: [],
 });
@@ -61,7 +61,7 @@ export const createCharacter = (): Character => ({
   color: "#5b8def",
   personality: "",
   defaultPauseBeforeSeconds: 0.25,
-  voice: {styleId: 0, speed: 1, pitch: 0, intonation: 1, volume: 1},
+  voice: {styleName: "ノーマル", speed: 1, pitch: 0, intonation: 1, volume: 1},
   psdAssetId: null,
   psdDefaults: {},
   avatar: {scale: 1, offsetX: 0, offsetY: 0, previewUrl: null},

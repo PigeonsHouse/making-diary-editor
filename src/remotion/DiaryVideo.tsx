@@ -182,8 +182,9 @@ function Avatars({project, characters}: Props) {
       {selected.map((character, index) => {
         const side = index % 2 === 0 ? "right" : "left";
         const level = Math.floor(index / 2);
-        const bottom = 540 - project.avatarLayout.basePeekOffsetPx +
-          level * project.avatarLayout.stackStepPx + character.avatar.offsetY;
+        const panelTop = EDITOR_CONSTANTS.height * 0.77;
+        const top = panelTop - project.avatarLayout.peekOffsetPx * (level + 1) +
+          character.avatar.offsetY;
         if (!character.avatar.previewUrl) return null;
         return (
           <Img
@@ -191,7 +192,7 @@ function Avatars({project, characters}: Props) {
             src={character.avatar.previewUrl}
             style={{
               position: "absolute",
-              bottom,
+              top,
               [side]: character.avatar.offsetX,
               height: `${70 * character.avatar.scale}%`,
               zIndex: 10 - level,

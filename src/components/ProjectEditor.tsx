@@ -251,11 +251,8 @@ function CastEditor({project, characters, update}: {
         ) : null}
       </div>
       <div className="field-grid compact">
-        <label>矩形から覗かせるpx<input type="number" value={project.avatarLayout.basePeekOffsetPx} onChange={(event) =>
-          update((draft) => { draft.avatarLayout.basePeekOffsetPx = Number(event.target.value); })
-        } /></label>
-        <label>重なりごとの段差px<input type="number" value={project.avatarLayout.stackStepPx} onChange={(event) =>
-          update((draft) => { draft.avatarLayout.stackStepPx = Number(event.target.value); })
+        <label>立ち絵の覗き量px<input type="number" value={project.avatarLayout.peekOffsetPx} onChange={(event) =>
+          update((draft) => { draft.avatarLayout.peekOffsetPx = Number(event.target.value); })
         } /></label>
       </div>
     </details>
@@ -272,6 +269,7 @@ function WishEditor({project, characters, update}: {
       draft.wishList = {markdown: "- 作りたいもの", dialogues: [], durationSeconds: null};
     })}>＋ 今作りたいものリスト</button>;
   }
+  const cast = project.characterIds.map((id) => characters.find((item) => item.id === id)).filter(Boolean) as Character[];
   return (
     <section className="wish-editor">
       <div className="section-heading"><div><p className="eyebrow">WISH LIST</p><h2>今作りたいもの</h2></div>
@@ -281,6 +279,25 @@ function WishEditor({project, characters, update}: {
         draft.wishList!.markdown = event.target.value;
       })} />
       <p className="hint">Markdownの中黒リストとインデントに対応</p>
+      <div className="wish-dialogues">
+        {project.wishList.dialogues.map((dialogue, index) => (
+          <DialogueEditor key={dialogue.id} dialogue={dialogue} index={index} characters={cast}
+            updateDialogue={(recipe) => update((draft) => recipe(draft.wishList!.dialogues[index]))}
+            remove={() => update((draft) => draft.wishList!.dialogues.splice(index, 1))}
+          />
+        ))}
+        {project.wishList.dialogues.length === 0 ? (
+          <label className="duration-field">セリフなしの表示時間
+            <input type="number" min="0.1" step="0.1" value={project.wishList.durationSeconds ?? 3} onChange={(event) =>
+              update((draft) => { draft.wishList!.durationSeconds = Number(event.target.value); })
+            } />秒
+          </label>
+        ) : null}
+        <button className="add-dialogue" disabled={cast.length === 0} onClick={() => update((draft) => {
+          draft.wishList!.durationSeconds = null;
+          draft.wishList!.dialogues.push(createDialogue(cast[0].id));
+        })}>＋ 作りたいもののセリフを追加</button>
+      </div>
     </section>
   );
 }
@@ -401,7 +418,7 @@ function DialogueEditor({dialogue, index, characters, updateDialogue, remove}: {
         const response = await fetch("/api/voice", {
           method: "POST",
           headers: {"content-type": "application/json"},
-          body: JSON.stringify({...voice, text: dialogue.text, kana: dialogue.kana}),
+          body: JSON.stringify({...voice, voicevoxName: character.voicevoxName, text: dialogue.text, kana: dialogue.kana}),
         });
         if (!response.ok) throw new Error((await response.json()).error);
         const result = await response.json();
