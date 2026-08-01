@@ -39,7 +39,7 @@ services:
         condition: service_healthy
 
   voicevox:
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+    image: voicevox/voicevox_engine:cpu-0.26.0-dev
     ports:
       - "50021:50021"
 
