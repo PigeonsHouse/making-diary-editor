@@ -18,6 +18,15 @@ export const characterSchema = z.object({
   voice: voiceSettingsSchema,
   psdAssetId: z.string().uuid().nullable().default(null),
   psdDefaults: z.record(z.string(), z.string()).default({}),
+  psdFilterOrder: z.array(z.string()).default([]),
+  psdFilters: z.record(z.string(), z.object({
+    targets: z.array(z.string()),
+    choiceOrder: z.array(z.string()).default([]),
+    choices: z.record(z.string(), z.object({
+      show: z.array(z.string()),
+      hide: z.array(z.string()).optional(),
+    })),
+  })).default({}),
   avatar: z.object({
     scale: z.number().positive().default(1),
     offsetX: z.number().default(0),

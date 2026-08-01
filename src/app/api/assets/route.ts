@@ -18,9 +18,11 @@ export async function POST(request: Request) {
     if (!(file instanceof File)) {
       return NextResponse.json({error: "ファイルが必要です"}, {status: 400});
     }
-    const kind = file.type.startsWith("image/")
-      ? "image"
-      : file.type.startsWith("video/") ? "video" : file.name.toLowerCase().endsWith(".psd") ? "psd" : null;
+    const kind = file.name.toLowerCase().endsWith(".psd")
+      ? "psd"
+      : file.type.startsWith("image/")
+        ? "image"
+        : file.type.startsWith("video/") ? "video" : null;
     if (!kind) return NextResponse.json({error: "画像、動画、PSDだけアップロードできます"}, {status: 415});
     const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
     const uploadDir = path.join(dataDir, "uploads");

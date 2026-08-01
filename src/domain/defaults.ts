@@ -64,5 +64,7 @@ export const createCharacter = (): Character => ({
   voice: {styleName: "ノーマル", speed: 1, pitch: 0, intonation: 1, volume: 1},
   psdAssetId: null,
   psdDefaults: {},
+  psdFilterOrder: [],
+  psdFilters: {},
   avatar: {scale: 1, offsetX: 0, offsetY: 0, previewUrl: null},
 });

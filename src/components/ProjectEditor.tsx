@@ -11,6 +11,7 @@ import type {
   ProjectRecord,
 } from "@/domain/types";
 import {VideoPreview} from "./VideoPreview";
+import {VoiceSettingsSliders} from "./VoiceSettingsSliders";
 
 type CharacterRow = {id: string; revision: number; data: Character};
 type AssetRow = {
@@ -465,8 +466,46 @@ function DialogueEditor({dialogue, index, characters, updateDialogue, remove}: {
         ) : dialogue.audio.status === "generating" ? "生成中" : dialogue.audio.status === "error" ? "!" : "○"}
       </div>
       <button className="icon danger" onClick={remove}>×</button>
+      {character && Object.keys(character.psdFilters).length > 0 ? (
+        <div className="dialogue-psd-options">
+          {(character.psdFilterOrder.length ? character.psdFilterOrder : Object.keys(character.psdFilters))
+            .filter((filterName) => character.psdFilters[filterName])
+            .map((filterName) => {
+            const filter = character.psdFilters[filterName]; return (
+            <label key={filterName}>{filterName}
+              <select value={dialogue.psdOverrides[filterName] ?? ""} onChange={(event) => updateDialogue((draft) => {
+                if (event.target.value) draft.psdOverrides[filterName] = event.target.value;
+                else delete draft.psdOverrides[filterName];
+              })}>
+                <option value="">既定: {character.psdDefaults[filterName] ?? "未指定"}</option>
+                {(filter.choiceOrder.length ? filter.choiceOrder : Object.keys(filter.choices))
+                  .filter((choice) => filter.choices[choice])
+                  .map((choice) => <option key={choice}>{choice}</option>)}
+              </select>
+            </label>
+          );})}
+        </div>
+      ) : null}
+      {character ? <DialogueVoiceOverrides character={character} dialogue={dialogue} updateDialogue={updateDialogue} /> : null}
     </div>
   );
+}
+
+function DialogueVoiceOverrides({character, dialogue, updateDialogue}: {
+  character: Character;
+  dialogue: Dialogue;
+  updateDialogue: (recipe: (draft: Dialogue) => void) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return <details className="dialogue-voice-options" open={isOpen}
+    onToggle={(event) => setIsOpen(event.currentTarget.open)}>
+    <summary>音声パラメータの上書き</summary>
+    {isOpen ? <VoiceSettingsSliders allowUnset values={dialogue.voiceOverrides} defaults={character.voice}
+      onChange={(key, value) => updateDialogue((draft) => {
+        if (value === undefined) delete draft.voiceOverrides[key];
+        else draft.voiceOverrides[key] = value;
+      })} /> : null}
+  </details>;
 }
 
 function AssetLibrary({assets, onChanged}: {

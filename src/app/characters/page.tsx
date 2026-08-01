@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import {createCharacter} from "@/domain/defaults";
 import type {Character} from "@/domain/types";
 import {PsdSettings} from "@/components/PsdSettings";
+import {VoiceSettingsSliders} from "@/components/VoiceSettingsSliders";
 
 type Row = {id: string; revision: number; data: Character};
 type VoicevoxSpeaker = {name: string; styles: Array<{name: string; id: number}>};
@@ -89,10 +90,8 @@ export default function CharactersPage() {
               <label>既定スタイル<select value={row.data.voice.styleName} onChange={(event) => update((draft) => { draft.voice.styleName = event.target.value; })}>
                 {speakers.find((item) => item.name === row.data.voicevoxName)?.styles.map((style) => <option key={style.id}>{style.name}</option>)}
               </select></label>
-              <label>話速<input type="number" step="0.05" value={row.data.voice.speed} onChange={(event) => update((draft) => { draft.voice.speed = Number(event.target.value); })} /></label>
-              <label>ピッチ<input type="number" step="0.01" value={row.data.voice.pitch} onChange={(event) => update((draft) => { draft.voice.pitch = Number(event.target.value); })} /></label>
-              <label>抑揚<input type="number" step="0.05" value={row.data.voice.intonation} onChange={(event) => update((draft) => { draft.voice.intonation = Number(event.target.value); })} /></label>
-              <label>音量<input type="number" step="0.05" value={row.data.voice.volume} onChange={(event) => update((draft) => { draft.voice.volume = Number(event.target.value); })} /></label>
+              <div className="wide"><VoiceSettingsSliders values={row.data.voice} defaults={row.data.voice}
+                onChange={(key, value) => { if (value !== undefined) update((draft) => { draft.voice[key] = value; }); }} /></div>
               <label>既定のセリフ前余白<input type="number" step="0.1" value={row.data.defaultPauseBeforeSeconds} onChange={(event) => update((draft) => { draft.defaultPauseBeforeSeconds = Number(event.target.value); })} /></label>
               <label className="wide">性格・口調<textarea value={row.data.personality} onChange={(event) => update((draft) => { draft.personality = event.target.value; })} /></label>
             </div>
