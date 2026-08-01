@@ -13,6 +13,7 @@ import {
 import {EDITOR_CONSTANTS} from "@/domain/defaults";
 import {calculateBlock} from "@/domain/timeline";
 import type {Character, ContentBlock, DiaryEntry, ProjectDocument} from "@/domain/types";
+import {WishMarkdown} from "./WishMarkdown";
 
 type Props = {
   project: ProjectDocument;
@@ -252,13 +253,7 @@ function WishScene({project, characters, block}: Props & {block: ContentBlock}) 
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill className="video-notebook">
-      <div className="video-wish-markdown">
-        {project.wishList?.markdown.split("\n").map((line, index) => (
-          <div key={index} style={{paddingLeft: `${Math.max(0, line.search(/\S/)) * 16}px`}}>
-            {line.replace(/^\s*[-*]\s*/, "・")}
-          </div>
-        ))}
-      </div>
+      <WishMarkdown markdown={project.wishList?.markdown ?? ""} />
       <DialogueLayer block={block} localFrame={frame} characters={characters} />
     </AbsoluteFill>
   );

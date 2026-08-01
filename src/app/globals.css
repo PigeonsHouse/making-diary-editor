@@ -265,6 +265,11 @@ button.secondary { color: #4e5661; background: #e5e9ee; }
   background: repeating-linear-gradient(#fffdf6, #fffdf6 58px, #cdd9e5 60px);
 }
 .video-wish-markdown { position: absolute; inset: 150px 300px 300px; color: #25282d; font-size: 48px; line-height: 1.65; }
+.video-wish-markdown ul { margin: 0; padding-left: 1.35em; list-style: disc outside; }
+.video-wish-markdown ul ul { margin-top: .08em; list-style-type: circle; }
+.video-wish-markdown ul ul ul { list-style-type: square; }
+.video-wish-markdown li { padding-left: .18em; }
+.video-wish-markdown del { color: #66707a; text-decoration-thickness: .08em; }
 .video-notebook .video-dialogue-stack { bottom: 55px; height: 220px; }
 
 @media (max-width: 980px) {
