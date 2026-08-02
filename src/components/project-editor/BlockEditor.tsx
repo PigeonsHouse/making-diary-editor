@@ -6,6 +6,7 @@ import type { Character, ContentBlock } from "@/domain/types";
 import { DialogueEditor } from "./DialogueEditor";
 import { VideoAssetControls } from "./VideoAssetControls";
 import { getAssetDurationSeconds } from "./asset-metadata";
+import { BLOCK_DRAG_TYPE, hasBlockDragData, readBlockDragData } from "./block-dnd";
 import { hasDialogueDragData, readDialogueDragData } from "./dialogue-dnd";
 import type { AssetRow } from "./types";
 
@@ -18,6 +19,7 @@ type Props = {
   assets: AssetRow[];
   updateBlock: (recipe: (draft: ContentBlock) => void) => void;
   remove: () => void;
+  moveBlock: (fromBlockIndex: number, toBlockIndex: number) => void;
   moveDialogue: (
     diaryId: string,
     fromBlockIndex: number,
@@ -36,6 +38,7 @@ export function BlockEditor({
   assets,
   updateBlock,
   remove,
+  moveBlock,
   moveDialogue,
 }: Props) {
   const cast = projectCharacterIds
@@ -44,9 +47,35 @@ export function BlockEditor({
   const blockDurationSeconds = calculateBlock(block, characters).duration;
 
   return (
-    <section className="block-card">
+    <section
+      className="block-card"
+      onDragOver={(event) => {
+        if (!hasBlockDragData(event.dataTransfer)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        const from = readBlockDragData(event.dataTransfer, diaryId);
+        if (!from) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const after =
+          event.clientY >= event.currentTarget.getBoundingClientRect().top + event.currentTarget.offsetHeight / 2;
+        moveBlock(from.blockIndex, blockIndex + (after ? 1 : 0));
+      }}
+    >
       <div className="asset-control">
-        <span className="drag-handle" aria-hidden="true">
+        <span
+          className="drag-handle"
+          role="button"
+          aria-label="コンテンツを並べ替え"
+          title="ドラッグしてコンテンツを並べ替え"
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData(BLOCK_DRAG_TYPE, JSON.stringify({ diaryId, blockIndex }));
+          }}
+        >
           ⠿
         </span>
         <select

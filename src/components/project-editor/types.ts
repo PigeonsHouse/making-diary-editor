@@ -23,3 +23,8 @@ export type DialogueDragLocation = {
   blockIndex: number;
   dialogueIndex: number;
 };
+
+export type BlockDragLocation = {
+  diaryId: string;
+  blockIndex: number;
+};

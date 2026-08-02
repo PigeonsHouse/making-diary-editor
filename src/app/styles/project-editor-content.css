@@ -115,6 +115,11 @@
   color: #a3abb4;
   font-size: 18px;
   line-height: 1;
+  cursor: grab;
+  user-select: none;
+}
+.drag-handle:active {
+  cursor: grabbing;
 }
 .inline-field {
   display: flex;

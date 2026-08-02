@@ -87,6 +87,15 @@ export function DiaryPanel({
               })
             }
             remove={() => update((draft) => draft.diaries[diaryIndex].blocks.splice(blockIndex, 1))}
+            moveBlock={(fromBlockIndex, toBlockIndex) =>
+              update((draft) => {
+                const blocks = draft.diaries[diaryIndex].blocks;
+                const [moved] = blocks.splice(fromBlockIndex, 1);
+                if (!moved) return;
+                const adjustedIndex = fromBlockIndex < toBlockIndex ? toBlockIndex - 1 : toBlockIndex;
+                blocks.splice(Math.max(0, Math.min(adjustedIndex, blocks.length)), 0, moved);
+              })
+            }
             moveDialogue={moveDialogue}
           />
         ))}
