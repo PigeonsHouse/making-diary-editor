@@ -2,7 +2,6 @@ import { mkdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
-import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
 import { Worker } from "bullmq";
 import { eq } from "drizzle-orm";
@@ -11,28 +10,15 @@ import { db } from "@/server/db";
 import { assets, characters, renderJobs } from "@/server/db/schema";
 import { renderPsdPreview } from "@/server/psd";
 import { redis } from "@/server/queue";
+import { bundleRemotion } from "./remotion-bundler";
+import { resolveRenderAssetUrls } from "./render-input";
 
 const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const rendersDir = path.join(dataDir, "renders");
 
-function resolveAssetUrls<T>(value: T): T {
-  const appUrl = process.env.APP_URL ?? "http://app:3000";
-  if (typeof value === "string") {
-    return (value.startsWith("/api/") ? `${appUrl}${value}` : value) as T;
-  }
-  if (Array.isArray(value)) return value.map(resolveAssetUrls) as T;
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveAssetUrls(item)])) as T;
-  }
-  return value;
-}
-
 let serveUrlPromise: Promise<string> | null = null;
 const getServeUrl = () => {
-  serveUrlPromise ??= bundle({
-    entryPoint: path.join(process.cwd(), "src/remotion/index.ts"),
-    webpackOverride: (config) => config,
-  });
+  serveUrlPromise ??= bundleRemotion();
   return serveUrlPromise;
 };
 
@@ -66,7 +52,7 @@ async function main() {
           }
         }
       }
-      const inputProps = resolveAssetUrls({
+      const inputProps = resolveRenderAssetUrls({
         project: job.snapshot,
         characters: characterData,
         dialoguePsdPreviewUrls,

@@ -9,20 +9,37 @@ import { AssetLibrary } from "./project-editor/AssetLibrary";
 import { CastEditor } from "./project-editor/CastEditor";
 import { DiaryPanel } from "./project-editor/DiaryPanel";
 import { ProjectTabs } from "./project-editor/ProjectTabs";
+import { RenderDownloadLink, RenderHistory } from "./project-editor/RenderHistory";
 import { WishEditor } from "./project-editor/WishEditor";
 import { cleanLegacyVoiceOverrides, fillMissingAssetDurations } from "./project-editor/project-document";
 import { getPreviewProject } from "./project-editor/preview-project";
 import type { AssetRow, CharacterRow, EditorTab } from "./project-editor/types";
+import { useNavigationGuard } from "./project-editor/useNavigationGuard";
+import { useRenderJobs } from "./project-editor/useRenderJobs";
 
 export function ProjectEditor({ projectId }: { projectId: string }) {
   const [record, setRecord] = useState<ProjectRecord | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [saveState, setSaveState] = useState("読み込み中");
-  const [renderState, setRenderState] = useState("");
+  const [hasPendingSave, setHasPendingSave] = useState(false);
   const [activeTab, setActiveTab] = useState<EditorTab>("general");
   const skipSave = useRef(true);
+  const changeVersion = useRef(0);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const {
+    jobs: renderJobs,
+    isLoading: isRenderHistoryLoading,
+    isStarting: isRenderStarting,
+    hasActiveRender,
+    latestCompletedJob,
+    statusText: renderState,
+    startRender,
+  } = useRenderJobs(projectId);
+  useNavigationGuard(
+    hasPendingSave,
+    "変更の保存が完了していません。このページを離れると編集内容が失われる可能性があります。移動しますか？",
+  );
 
   useEffect(() => {
     Promise.all([
@@ -38,12 +55,16 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
         setCharacters(characterRows.map((row) => row.data));
         setAssets(assetRows);
         setSaveState(documentChanged ? "未保存" : "保存済み");
+        changeVersion.current = documentChanged ? 1 : 0;
+        setHasPendingSave(documentChanged);
         skipSave.current = !documentChanged;
       })
       .catch(() => setSaveState("読み込み失敗"));
   }, [projectId]);
 
   const update = useCallback((recipe: (draft: ProjectDocument) => void) => {
+    changeVersion.current += 1;
+    setHasPendingSave(true);
     setRecord((current) => {
       if (!current) return current;
       const document = structuredClone(current.document);
@@ -60,17 +81,29 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
       return;
     }
     const timer = window.setTimeout(async () => {
-      setSaveState("保存中…");
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ revision: record.revision, document: record.document }),
-      });
-      if (response.status === 409) return setSaveState("競合：再読み込みしてください");
-      if (!response.ok) return setSaveState("保存失敗");
-      skipSave.current = true;
-      setRecord(await response.json());
-      setSaveState("保存済み");
+      const savingVersion = changeVersion.current;
+      try {
+        setSaveState("保存中…");
+        const response = await fetch(`/api/projects/${projectId}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ revision: record.revision, document: record.document }),
+        });
+        if (response.status === 409) return setSaveState("競合：再読み込みしてください");
+        if (!response.ok) return setSaveState("保存失敗");
+        const savedRecord = (await response.json()) as ProjectRecord;
+        if (savingVersion === changeVersion.current) {
+          skipSave.current = true;
+          setRecord(savedRecord);
+          setHasPendingSave(false);
+          setSaveState("保存済み");
+        } else {
+          setRecord((current) => (current ? { ...savedRecord, document: current.document } : savedRecord));
+          setSaveState("未保存");
+        }
+      } catch {
+        setSaveState("保存失敗");
+      }
     }, 700);
     return () => window.clearTimeout(timer);
   }, [record, projectId]);
@@ -124,29 +157,6 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
       targetBlock.durationSeconds = null;
       if (sourceBlock !== targetBlock && sourceBlock.dialogues.length === 0) sourceBlock.durationSeconds = 3;
     });
-  const render = async () => {
-    setRenderState("キューへ追加中…");
-    const response = await fetch("/api/render", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ projectId }),
-    });
-    const body = await response.json();
-    if (!response.ok) return setRenderState(body.error ?? "開始できませんでした");
-    setRenderState("待機中 0%");
-    const events = new EventSource(`/api/render/${body.id}/events`);
-    events.onmessage = (event) => {
-      const job = JSON.parse(event.data);
-      setRenderState(
-        job.status === "completed"
-          ? "完成しました"
-          : job.status === "failed"
-            ? `失敗: ${job.error}`
-            : `${job.status === "queued" ? "待機中" : "レンダリング中"} ${job.progress}%`,
-      );
-      if (["completed", "failed", "missing"].includes(job.status)) events.close();
-    };
-  };
   const generateDialogues = async (diaryId: string, memo: string) => {
     const response = await fetch("/api/gemini", {
       method: "POST",
@@ -186,9 +196,16 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
           <span />
           {saveState}
         </div>
-        <button className="primary" disabled={issues.length > 0 || renderState.includes("中")} onClick={render}>
+        <button
+          className="primary"
+          disabled={
+            issues.length > 0 || hasPendingSave || isRenderHistoryLoading || isRenderStarting || hasActiveRender
+          }
+          onClick={() => void startRender()}
+        >
           レンダリング
         </button>
+        {latestCompletedJob ? <RenderDownloadLink job={latestCompletedJob} /> : null}
         {renderState ? <span className="render-state">{renderState}</span> : null}
       </div>
       {issues.length ? (
@@ -211,6 +228,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
             <div id="panel-general" role="tabpanel" aria-labelledby="tab-general" className="editor-tab-panel">
               <CastEditor project={project} characters={characters} update={update} />
               <AssetLibrary assets={assets} onChanged={setAssets} />
+              <RenderHistory jobs={renderJobs} isLoading={isRenderHistoryLoading} />
             </div>
           ) : null}
           {activeTab === "wish" ? (

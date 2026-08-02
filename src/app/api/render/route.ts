@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { validateProject } from "@/domain/timeline";
 import { db } from "@/server/db";
@@ -41,8 +41,21 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const projectId = new URL(request.url).searchParams.get("projectId");
+  const columns = {
+    id: renderJobs.id,
+    projectId: renderJobs.projectId,
+    status: renderJobs.status,
+    progress: renderJobs.progress,
+    error: renderJobs.error,
+    createdAt: renderJobs.createdAt,
+    updatedAt: renderJobs.updatedAt,
+  };
   const rows = projectId
-    ? await db.select().from(renderJobs).where(eq(renderJobs.projectId, projectId))
-    : await db.select().from(renderJobs);
+    ? await db
+        .select(columns)
+        .from(renderJobs)
+        .where(eq(renderJobs.projectId, projectId))
+        .orderBy(desc(renderJobs.createdAt))
+    : await db.select(columns).from(renderJobs).orderBy(desc(renderJobs.createdAt));
   return NextResponse.json(rows);
 }

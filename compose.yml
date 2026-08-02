@@ -14,6 +14,10 @@ services:
       DATA_DIR: /data
     volumes:
       - diary-data:/data
+    networks:
+      default:
+        aliases:
+          - diary-web
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,7 +33,7 @@ services:
       REDIS_URL: redis://redis:6379
       DATA_DIR: /data
       CHROMIUM_PATH: /usr/bin/chromium
-      APP_URL: http://app:3000
+      APP_URL: http://diary-web:3000
     volumes:
       - diary-data:/data
     depends_on:
