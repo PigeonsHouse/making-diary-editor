@@ -11,6 +11,7 @@ import {DiaryPanel} from "./project-editor/DiaryPanel";
 import {ProjectTabs} from "./project-editor/ProjectTabs";
 import {WishEditor} from "./project-editor/WishEditor";
 import {cleanLegacyVoiceOverrides} from "./project-editor/project-document";
+import {getPreviewProject} from "./project-editor/preview-project";
 import type {AssetRow, CharacterRow, EditorTab} from "./project-editor/types";
 
 export function ProjectEditor({projectId}: {projectId: string}) {
@@ -87,6 +88,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
   }
 
   const project = record.document;
+  const previewProject = getPreviewProject(project, activeTab);
   const issues = validateProject(project, characters);
   const addDiary = () => {
     const diary = createDiary();
@@ -233,7 +235,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
           )}
         </section>
         <aside className="preview-column">
-          <VideoPreview project={project} characters={characters} />
+          <VideoPreview key={activeTab} project={previewProject} characters={characters} />
           <div className="preview-meta">
             <span>1920 × 1080</span>
             <span>30 FPS</span>
