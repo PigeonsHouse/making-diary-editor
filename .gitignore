@@ -6,3 +6,4 @@ out
 data
 *.log
 *.tsbuildinfo
+backup/
