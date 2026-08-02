@@ -1,5 +1,6 @@
 import { EDITOR_CONSTANTS } from "./defaults";
 import type { Character, ContentBlock, Dialogue, ProjectDocument } from "./types";
+import { getVideoPlaybackRateError } from "./video-asset";
 
 export type TimedDialogue = {
   dialogue: Dialogue;
@@ -91,7 +92,13 @@ export function validateProject(document: ProjectDocument, characters: Character
   for (const diary of document.diaries) {
     if (dates.has(diary.date)) issues.push({ path: diary.id, message: "日誌の日付が重複しています" });
     dates.add(diary.date);
-    for (const block of diary.blocks) issues.push(...calculateBlock(block, characters).issues);
+    for (const block of diary.blocks) {
+      const timing = calculateBlock(block, characters);
+      issues.push(...timing.issues);
+      if (block.asset?.type !== "video") continue;
+      const playbackRateError = getVideoPlaybackRateError(block.asset, timing.duration, EDITOR_CONSTANTS.fps);
+      if (playbackRateError) issues.push({ path: block.id, message: playbackRateError });
+    }
   }
   return issues;
 }

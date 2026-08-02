@@ -72,6 +72,8 @@ export const assetSettingsSchema = z.object({
   assetId: z.string().uuid(),
   type: z.enum(["image", "video"]),
   url: z.string(),
+  displayArea: z.enum(["full", "above-dialogue"]).default("full"),
+  sourceDurationSeconds: z.number().positive().nullable().default(null),
   trim: z.object({
     top: z.number().nonnegative().default(0),
     right: z.number().nonnegative().default(0),
@@ -128,6 +130,7 @@ export const projectDocumentSchema = z.object({
 export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 export type Character = z.infer<typeof characterSchema>;
 export type Dialogue = z.infer<typeof dialogueSchema>;
+export type AssetSettings = z.infer<typeof assetSettingsSchema>;
 export type ContentBlock = z.infer<typeof contentBlockSchema>;
 export type DiaryEntry = z.infer<typeof diaryEntrySchema>;
 export type ProjectDocument = z.infer<typeof projectDocumentSchema>;

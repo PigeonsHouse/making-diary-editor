@@ -1,18 +1,10 @@
 "use client";
 
-import {
-  AbsoluteFill,
-  Audio,
-  Img,
-  OffthreadVideo,
-  Sequence,
-  interpolate,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
 import type { Character, ContentBlock, DiaryEntry, ProjectDocument } from "@/domain/types";
+import { AssetBackground } from "./AssetBackground";
 import { Avatars } from "./Avatars";
 import { WishMarkdown } from "./WishMarkdown";
 
@@ -63,13 +55,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
     const duration = secondsToFrames(timing.duration, fps);
     sequences.push(
       <Sequence key="wish" from={cursor} durationInFrames={duration}>
-        <WishScene
-          project={project}
-          characters={characters}
-          block={block}
-          defaultEndHold={defaultEndHold}
-          dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
-        />
+        <WishScene project={project} characters={characters} block={block} defaultEndHold={defaultEndHold} />
       </Sequence>,
     );
     cursor += duration;
@@ -99,46 +85,6 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
   return <AbsoluteFill style={{ background: "#f4f6f8" }}>{sequences}</AbsoluteFill>;
 }
 
-function GridBackground() {
-  return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: "#f8fafc",
-        backgroundImage:
-          "linear-gradient(#dce1e7 2px, transparent 2px), linear-gradient(90deg, #dce1e7 2px, transparent 2px)",
-        backgroundSize: "48px 48px",
-      }}
-    />
-  );
-}
-
-function AssetBackground({ block }: { block?: ContentBlock }) {
-  const asset = block?.asset;
-  if (!asset) return <GridBackground />;
-  const inset = EDITOR_CONSTANTS.mediaMarginPx;
-  const crop = asset.trim;
-  const style: React.CSSProperties = {
-    position: "absolute",
-    inset,
-    width: `calc(100% - ${inset * 2}px)`,
-    height: `calc(100% - ${inset * 2}px)`,
-    objectFit: "contain",
-    objectPosition: "center",
-    clipPath: `inset(${crop.top}px ${crop.right}px ${crop.bottom}px ${crop.left}px)`,
-  };
-  if (asset.type === "image") return <Img src={asset.url} style={style} />;
-  return (
-    <>
-      <OffthreadVideo
-        src={asset.url}
-        startFrom={Math.floor(asset.startSeconds * EDITOR_CONSTANTS.fps)}
-        volume={asset.shortageMode === "fit-duration" ? 0 : asset.volume}
-        style={style}
-      />
-    </>
-  );
-}
-
 function DiaryScene({
   project,
   diary,
@@ -152,11 +98,14 @@ function DiaryScene({
   let blockCursor = introFrames;
   let activeBlock = diary.blocks[0];
   let blockLocalFrame = frame;
+  let activeBlockDurationSeconds = activeBlock ? calculateBlock(activeBlock, characters, defaultEndHold).duration : 0;
   for (const block of diary.blocks) {
-    const duration = secondsToFrames(calculateBlock(block, characters, defaultEndHold).duration, fps);
+    const durationSeconds = calculateBlock(block, characters, defaultEndHold).duration;
+    const duration = secondsToFrames(durationSeconds, fps);
     if (frame >= blockCursor && frame < blockCursor + duration) {
       activeBlock = block;
       blockLocalFrame = frame - blockCursor;
+      activeBlockDurationSeconds = durationSeconds;
       break;
     }
     blockCursor += duration;
@@ -173,7 +122,12 @@ function DiaryScene({
 
   return (
     <AbsoluteFill>
-      <AssetBackground block={activeBlock} />
+      <AssetBackground
+        block={activeBlock}
+        blockStartFrame={blockCursor}
+        blockDurationSeconds={activeBlockDurationSeconds}
+        blockDurationInFrames={secondsToFrames(activeBlockDurationSeconds, fps)}
+      />
       <Avatars
         project={project}
         characters={characters}
@@ -267,26 +221,18 @@ function getVisibleDialogues(
     .map((item) => item.dialogue);
 }
 
-function WishScene({
-  project,
-  characters,
-  block,
-  defaultEndHold,
-  dialoguePsdPreviewUrls,
-}: Props & { block: ContentBlock }) {
+function WishScene({ project, characters, block, defaultEndHold }: Props & { block: ContentBlock }) {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const activeDialogues = getVisibleDialogues(block, frame, fps, characters, defaultEndHold);
   return (
     <AbsoluteFill className="video-notebook">
-      <Avatars
-        project={project}
-        characters={characters}
-        activeDialogues={activeDialogues}
-        dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
-      />
       <WishMarkdown markdown={project.wishList?.markdown ?? ""} />
-      <DialogueLayer block={block} localFrame={frame} blockStartFrame={0} characters={characters} />
+      <DialogueLayer
+        block={block}
+        localFrame={frame}
+        blockStartFrame={0}
+        characters={characters}
+        defaultEndHold={defaultEndHold}
+      />
     </AbsoluteFill>
   );
 }

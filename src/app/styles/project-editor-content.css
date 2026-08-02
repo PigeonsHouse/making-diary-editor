@@ -81,6 +81,35 @@
 .asset-control label input {
   width: 54px;
 }
+.video-asset-controls {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-left: 27px;
+}
+.video-clip-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.video-clip-summary,
+.video-duration-help {
+  color: var(--muted);
+  font-size: 9px;
+}
+.video-duration-mode select {
+  min-width: 210px;
+}
+.video-duration-help {
+  flex: 1 1 220px;
+}
+.video-duration-help.error {
+  color: #b42318;
+  font-weight: 700;
+}
 .drag-handle {
   flex: none;
   color: #a3abb4;

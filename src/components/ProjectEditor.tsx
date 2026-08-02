@@ -10,7 +10,7 @@ import { CastEditor } from "./project-editor/CastEditor";
 import { DiaryPanel } from "./project-editor/DiaryPanel";
 import { ProjectTabs } from "./project-editor/ProjectTabs";
 import { WishEditor } from "./project-editor/WishEditor";
-import { cleanLegacyVoiceOverrides } from "./project-editor/project-document";
+import { cleanLegacyVoiceOverrides, fillMissingAssetDurations } from "./project-editor/project-document";
 import { getPreviewProject } from "./project-editor/preview-project";
 import type { AssetRow, CharacterRow, EditorTab } from "./project-editor/types";
 
@@ -32,11 +32,13 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
     ])
       .then(([project, characterRows, assetRows]: [ProjectRecord, CharacterRow[], AssetRow[]]) => {
         const cleanedLegacyOverrides = cleanLegacyVoiceOverrides(project.document);
-        setRecord({ ...project, document: cleanedLegacyOverrides.document });
+        const filledAssetDurations = fillMissingAssetDurations(cleanedLegacyOverrides.document, assetRows);
+        const documentChanged = cleanedLegacyOverrides.changed || filledAssetDurations.changed;
+        setRecord({ ...project, document: filledAssetDurations.document });
         setCharacters(characterRows.map((row) => row.data));
         setAssets(assetRows);
-        setSaveState(cleanedLegacyOverrides.changed ? "未保存" : "保存済み");
-        skipSave.current = !cleanedLegacyOverrides.changed;
+        setSaveState(documentChanged ? "未保存" : "保存済み");
+        skipSave.current = !documentChanged;
       })
       .catch(() => setSaveState("読み込み失敗"));
   }, [projectId]);

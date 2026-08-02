@@ -207,7 +207,7 @@ export function DialogueEditor({
           })
         }
       />
-      <div className={`audio-status ${dialogue.audio.status}`}>
+      <div className={`audio-status ${dialogue.audio.status}`} title={dialogue.audio.error ?? undefined}>
         {dialogue.audio.status === "ready" && dialogue.audio.url ? (
           <button onClick={() => new window.Audio(dialogue.audio.url!).play()}>▶</button>
         ) : dialogue.audio.status === "generating" ? (
@@ -288,6 +288,11 @@ export function DialogueEditor({
           ) : null}
         </details>
       )}
+      {dialogue.audio.status === "error" && dialogue.audio.error ? (
+        <div className="dialogue-audio-error" role="alert">
+          {dialogue.audio.error}
+        </div>
+      ) : null}
       {character ? (
         <DialogueVoiceOverrides character={character} dialogue={dialogue} updateDialogue={updateDialogue} />
       ) : null}

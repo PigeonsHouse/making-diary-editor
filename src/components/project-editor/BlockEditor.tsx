@@ -1,8 +1,11 @@
 "use client";
 
 import { createDialogue } from "@/domain/defaults";
+import { calculateBlock } from "@/domain/timeline";
 import type { Character, ContentBlock } from "@/domain/types";
 import { DialogueEditor } from "./DialogueEditor";
+import { VideoAssetControls } from "./VideoAssetControls";
+import { getAssetDurationSeconds } from "./asset-metadata";
 import { hasDialogueDragData, readDialogueDragData } from "./dialogue-dnd";
 import type { AssetRow } from "./types";
 
@@ -38,6 +41,7 @@ export function BlockEditor({
   const cast = projectCharacterIds
     .map((id) => characters.find((item) => item.id === id))
     .filter(Boolean) as Character[];
+  const blockDurationSeconds = calculateBlock(block, characters).duration;
 
   return (
     <section className="block-card">
@@ -57,6 +61,8 @@ export function BlockEditor({
                     assetId: asset.id,
                     type: asset.kind as "image" | "video",
                     url: `/api/files/assets/${asset.id}`,
+                    displayArea: "full",
+                    sourceDurationSeconds: asset.kind === "video" ? getAssetDurationSeconds(asset) : null,
                     trim: { top: 0, right: 0, bottom: 0, left: 0 },
                     startSeconds: 0,
                     endSeconds: null,
@@ -79,6 +85,20 @@ export function BlockEditor({
         </select>
         {block.asset ? (
           <>
+            <label>
+              表示エリア
+              <select
+                value={block.asset.displayArea}
+                onChange={(event) =>
+                  updateBlock((draft) => {
+                    draft.asset!.displayArea = event.target.value as "full" | "above-dialogue";
+                  })
+                }
+              >
+                <option value="full">画面全体</option>
+                <option value="above-dialogue">字幕の上側</option>
+              </select>
+            </label>
             {(["top", "right", "bottom", "left"] as const).map((side) => (
               <label key={side}>
                 {side}
@@ -95,36 +115,15 @@ export function BlockEditor({
               </label>
             ))}
             {block.asset.type === "video" ? (
-              <>
-                <label>
-                  音量
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    disabled={block.asset.shortageMode === "fit-duration"}
-                    value={block.asset.volume}
-                    onChange={(event) =>
-                      updateBlock((draft) => {
-                        draft.asset!.volume = Number(event.target.value);
-                      })
-                    }
-                  />
-                </label>
-                <select
-                  value={block.asset.shortageMode}
-                  onChange={(event) =>
-                    updateBlock((draft) => {
-                      draft.asset!.shortageMode = event.target.value as "loop" | "freeze" | "fade-out" | "fit-duration";
-                    })
-                  }
-                >
-                  <option value="loop">ループ</option>
-                  <option value="freeze">最終フレーム</option>
-                  <option value="fade-out">フェードアウト</option>
-                  <option value="fit-duration">尺に合わせる</option>
-                </select>
-              </>
+              <VideoAssetControls
+                asset={block.asset}
+                blockDurationSeconds={blockDurationSeconds}
+                updateAsset={(recipe) =>
+                  updateBlock((draft) => {
+                    recipe(draft.asset!);
+                  })
+                }
+              />
             ) : null}
           </>
         ) : null}

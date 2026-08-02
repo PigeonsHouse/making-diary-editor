@@ -4,6 +4,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError } from "@/server/http";
+import { fetchVoicevox } from "@/server/voicevox";
 
 const schema = z.object({
   text: z.string().min(1),
@@ -30,8 +31,7 @@ export async function POST(request: Request) {
     } catch {}
 
     const host = process.env.VOICEVOX_URL ?? "http://localhost:50021";
-    const speakersResponse = await fetch(new URL("/speakers", host));
-    if (!speakersResponse.ok) throw new Error("VOICEVOXの話者一覧を取得できません");
+    const speakersResponse = await fetchVoicevox(new URL("/speakers", host), undefined, { operation: "話者一覧取得" });
     const speakers = (await speakersResponse.json()) as Array<{
       name: string;
       styles: Array<{ name: string; id: number }>;
@@ -42,18 +42,28 @@ export async function POST(request: Request) {
     const queryUrl = new URL("/audio_query", host);
     queryUrl.searchParams.set("text", input.text);
     queryUrl.searchParams.set("speaker", String(styleId));
-    const queryResponse = await fetch(queryUrl, { method: "POST" });
-    if (!queryResponse.ok) throw new Error(`VOICEVOX audio_query: ${queryResponse.status}`);
+    const queryResponse = await fetchVoicevox(
+      queryUrl,
+      { method: "POST" },
+      {
+        operation: "テキスト解析",
+        invalidInputMessage: "テキストをVOICEVOXで解析できませんでした",
+      },
+    );
     const audioQuery = await queryResponse.json();
     if (input.kana) {
       const phrasesUrl = new URL("/accent_phrases", host);
       phrasesUrl.searchParams.set("text", input.kana);
       phrasesUrl.searchParams.set("speaker", String(styleId));
       phrasesUrl.searchParams.set("is_kana", "true");
-      const phrasesResponse = await fetch(phrasesUrl, { method: "POST" });
-      if (!phrasesResponse.ok) {
-        throw new Error(`VOICEVOX accent_phrases: ${phrasesResponse.status}`);
-      }
+      const phrasesResponse = await fetchVoicevox(
+        phrasesUrl,
+        { method: "POST" },
+        {
+          operation: "kana解析",
+          invalidInputMessage: "kanaの形式が不正です。AquesTalk風記法を確認してください",
+        },
+      );
       audioQuery.accent_phrases = await phrasesResponse.json();
       audioQuery.kana = input.kana;
     }
@@ -67,12 +77,18 @@ export async function POST(request: Request) {
     });
     const synthUrl = new URL("/synthesis", host);
     synthUrl.searchParams.set("speaker", String(styleId));
-    const synth = await fetch(synthUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(audioQuery),
-    });
-    if (!synth.ok) throw new Error(`VOICEVOX synthesis: ${synth.status}`);
+    const synth = await fetchVoicevox(
+      synthUrl,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(audioQuery),
+      },
+      {
+        operation: "音声合成",
+        invalidInputMessage: "音声設定または入力内容が不正です",
+      },
+    );
     await writeFile(target, Buffer.from(await synth.arrayBuffer()));
     return NextResponse.json({ hash, url: `/api/files/audio/${hash}.wav` });
   } catch (error) {
