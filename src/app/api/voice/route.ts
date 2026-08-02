@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { apiError } from "@/server/http";
+import { ApiError, apiError } from "@/server/http";
 import { fetchVoicevox } from "@/server/voicevox";
+import { getWavDurationSeconds } from "@/server/wav";
 
 const schema = z.object({
   text: z.string().min(1),
@@ -26,8 +27,11 @@ export async function POST(request: Request) {
     const target = path.join(audioDir, `${hash}.wav`);
     await mkdir(audioDir, { recursive: true });
     try {
-      const info = await stat(target);
-      if (info.size > 44) return NextResponse.json({ hash, url: `/api/files/audio/${hash}.wav` });
+      const cachedAudio = await readFile(target);
+      const durationSeconds = getWavDurationSeconds(cachedAudio);
+      if (durationSeconds) {
+        return NextResponse.json({ hash, url: `/api/files/audio/${hash}.wav`, durationSeconds });
+      }
     } catch {}
 
     const host = process.env.VOICEVOX_URL ?? "http://localhost:50021";
@@ -89,8 +93,20 @@ export async function POST(request: Request) {
         invalidInputMessage: "音声設定または入力内容が不正です",
       },
     );
-    await writeFile(target, Buffer.from(await synth.arrayBuffer()));
-    return NextResponse.json({ hash, url: `/api/files/audio/${hash}.wav` });
+    const audio = Buffer.from(await synth.arrayBuffer());
+    const durationSeconds = getWavDurationSeconds(audio);
+    if (!durationSeconds) {
+      throw new ApiError(400, "VOICEVOXから発音可能な音声が生成されませんでした。セリフまたはkanaを確認してください");
+    }
+
+    const temporaryTarget = `${target}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temporaryTarget, audio);
+      await rename(temporaryTarget, target);
+    } finally {
+      await rm(temporaryTarget, { force: true });
+    }
+    return NextResponse.json({ hash, url: `/api/files/audio/${hash}.wav`, durationSeconds });
   } catch (error) {
     return apiError(error);
   }

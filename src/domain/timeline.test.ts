@@ -48,6 +48,25 @@ describe("calculateBlock", () => {
     );
     expect(result.issues).toHaveLength(1);
   });
+
+  it("音声時間がInfinityでも有限なプレビュー時間へフォールバックする", () => {
+    const dialogue = ready("彡", Infinity, null);
+    const result = calculateBlock(
+      {
+        id: crypto.randomUUID(),
+        title: "",
+        asset: null,
+        durationSeconds: null,
+        endHoldSeconds: null,
+        dialogues: [dialogue],
+      },
+      [character],
+    );
+
+    expect(result.issues).toContainEqual({ path: dialogue.id, message: "音声が生成されていません" });
+    expect(Number.isFinite(result.duration)).toBe(true);
+    expect(Number.isInteger(Math.ceil(result.duration * 30))).toBe(true);
+  });
 });
 
 describe("dialogueAudioStartFrame", () => {

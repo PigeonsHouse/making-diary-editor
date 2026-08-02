@@ -15,7 +15,11 @@ type Props = {
   dialoguePsdPreviewUrls?: Record<string, string>;
 };
 
-const secondsToFrames = (seconds: number, fps: number) => Math.max(1, Math.ceil(seconds * fps));
+const secondsToFrames = (seconds: number, fps: number) => {
+  if (!Number.isFinite(seconds) || seconds <= 0 || !Number.isFinite(fps) || fps <= 0) return 1;
+  const frames = Math.ceil(seconds * fps);
+  return Number.isSafeInteger(frames) && frames > 0 ? frames : 1;
+};
 
 export function getVideoDuration(project: ProjectDocument, characters: Character[], fps = 30) {
   let seconds = 0;
@@ -34,7 +38,8 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
     seconds += EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds;
     seconds += diary.blocks.reduce((sum, block) => sum + calculateBlock(block, characters).duration, 0);
   }
-  return Math.max(fps, secondsToFrames(seconds, fps));
+  const minimumFrames = Number.isSafeInteger(fps) && fps > 0 ? fps : EDITOR_CONSTANTS.fps;
+  return Math.max(minimumFrames, secondsToFrames(seconds, fps));
 }
 
 export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPreviewUrls }: Props) {

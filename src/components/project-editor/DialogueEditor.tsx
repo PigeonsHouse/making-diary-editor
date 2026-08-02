@@ -32,6 +32,18 @@ export function DialogueEditor({
   const initialSignature = useRef("__generate__");
   const updateDialogueRef = useRef(updateDialogue);
   updateDialogueRef.current = updateDialogue;
+  const updateAudioInput = (recipe: (draft: Dialogue) => void) => {
+    updateDialogue((draft) => {
+      recipe(draft);
+      draft.audio = {
+        status: "generating",
+        url: null,
+        durationSeconds: null,
+        error: null,
+        inputHash: null,
+      };
+    });
+  };
 
   useEffect(() => {
     if (!character) return;
@@ -43,7 +55,7 @@ export function DialogueEditor({
       kana: dialogue.kana,
     };
     const signature = JSON.stringify(input);
-    if (signature === initialSignature.current) return;
+    if (signature === initialSignature.current && dialogue.audio.status === "ready") return;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       try {
@@ -53,46 +65,38 @@ export function DialogueEditor({
           body: JSON.stringify(input),
         });
         if (!response.ok) throw new Error((await response.json()).error);
-        const result = await response.json();
+        const result = (await response.json()) as { hash: string; url: string; durationSeconds: number };
         if (cancelled) return;
         initialSignature.current = signature;
-        if (dialogue.audio.status === "ready" && dialogue.audio.inputHash === result.hash) return;
+        if (!Number.isFinite(result.durationSeconds) || result.durationSeconds <= 0) {
+          throw new Error("音声時間を取得できませんでした。セリフまたはkanaを確認してください");
+        }
+        if (
+          dialogue.audio.status === "ready" &&
+          dialogue.audio.inputHash === result.hash &&
+          dialogue.audio.durationSeconds === result.durationSeconds
+        ) {
+          return;
+        }
         updateDialogueRef.current((draft) => {
-          draft.audio.status = "generating";
+          draft.audio = {
+            status: "ready",
+            url: result.url,
+            durationSeconds: result.durationSeconds,
+            error: null,
+            inputHash: result.hash,
+          };
         });
-        const audio = new window.Audio(result.url);
-        audio.addEventListener(
-          "loadedmetadata",
-          () => {
-            if (cancelled) return;
-            updateDialogueRef.current((draft) => {
-              draft.audio = {
-                status: "ready",
-                url: result.url,
-                durationSeconds: audio.duration,
-                error: null,
-                inputHash: result.hash,
-              };
-            });
-          },
-          { once: true },
-        );
-        audio.addEventListener(
-          "error",
-          () => {
-            if (cancelled) return;
-            updateDialogueRef.current((draft) => {
-              draft.audio.status = "error";
-              draft.audio.error = "生成音声を読み込めませんでした";
-            });
-          },
-          { once: true },
-        );
       } catch (error) {
         if (cancelled) return;
         updateDialogueRef.current((draft) => {
-          draft.audio.status = "error";
-          draft.audio.error = error instanceof Error ? error.message : "音声生成に失敗しました";
+          draft.audio = {
+            status: "error",
+            url: null,
+            durationSeconds: null,
+            error: error instanceof Error ? error.message : "音声生成に失敗しました",
+            inputHash: null,
+          };
         });
       }
     }, 900);
@@ -132,7 +136,7 @@ export function DialogueEditor({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "kanaを取得できませんでした");
-      updateDialogue((draft) => {
+      updateAudioInput((draft) => {
         draft.kana = result.kana;
       });
       setKanaOpen(true);
@@ -174,7 +178,7 @@ export function DialogueEditor({
       <select
         value={dialogue.characterId}
         onChange={(event) =>
-          updateDialogue((draft) => {
+          updateAudioInput((draft) => {
             draft.characterId = event.target.value;
           })
         }
@@ -202,7 +206,7 @@ export function DialogueEditor({
       <textarea
         value={dialogue.text}
         onChange={(event) =>
-          updateDialogue((draft) => {
+          updateAudioInput((draft) => {
             draft.text = event.target.value;
           })
         }
@@ -249,7 +253,7 @@ export function DialogueEditor({
                 aria-label="AquesTalk風kana"
                 value={dialogue.kana}
                 onChange={(event) =>
-                  updateDialogue((draft) => {
+                  updateAudioInput((draft) => {
                     draft.kana = event.target.value;
                   })
                 }
@@ -272,7 +276,7 @@ export function DialogueEditor({
                   className="secondary"
                   onClick={() => {
                     if (window.confirm("現在のkanaを削除してnullに戻します。読み調整は元に戻せません。続けますか？")) {
-                      updateDialogue((draft) => {
+                      updateAudioInput((draft) => {
                         draft.kana = null;
                       });
                       setKanaOpen(false);
@@ -294,7 +298,7 @@ export function DialogueEditor({
         </div>
       ) : null}
       {character ? (
-        <DialogueVoiceOverrides character={character} dialogue={dialogue} updateDialogue={updateDialogue} />
+        <DialogueVoiceOverrides character={character} dialogue={dialogue} updateDialogue={updateAudioInput} />
       ) : null}
       {character && Object.keys(character.psdFilters).length > 0 ? (
         <DialoguePsdOverrides character={character} dialogue={dialogue} updateDialogue={updateDialogue} />

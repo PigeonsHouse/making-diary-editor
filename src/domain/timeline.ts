@@ -21,13 +21,18 @@ export function dialogueAudioStartFrame(blockStartFrame: number, dialogueStartSe
 
 const characterMap = (characters: Character[]) => new Map(characters.map((character) => [character.id, character]));
 
+const isPositiveFinite = (value: number | null | undefined): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
+
+const finiteOr = (value: number, fallback: number) => (Number.isFinite(value) ? value : fallback);
+
 export function calculateBlock(
   block: ContentBlock,
   characters: Character[],
   defaultEndHold: number = EDITOR_CONSTANTS.defaultBlockEndHoldSeconds,
 ): { dialogues: TimedDialogue[]; duration: number; issues: TimelineIssue[] } {
   if (block.dialogues.length === 0) {
-    const duration = block.durationSeconds ?? 0;
+    const duration = isPositiveFinite(block.durationSeconds) ? block.durationSeconds : 0;
     return {
       dialogues: [],
       duration,
@@ -45,11 +50,14 @@ export function calculateBlock(
     if (!character) {
       issues.push({ path: dialogue.id, message: "参照キャラクターが存在しません" });
     }
-    if (!dialogue.audio.durationSeconds) {
+    const audioDuration = isPositiveFinite(dialogue.audio.durationSeconds) ? dialogue.audio.durationSeconds : null;
+    if (!audioDuration) {
       issues.push({ path: dialogue.id, message: "音声が生成されていません" });
     }
 
-    const pause = dialogue.pauseBeforeSeconds ?? (index === 0 ? 0 : (character?.defaultPauseBeforeSeconds ?? 0));
+    const requestedPause =
+      dialogue.pauseBeforeSeconds ?? (index === 0 ? 0 : (character?.defaultPauseBeforeSeconds ?? 0));
+    const pause = finiteOr(requestedPause, 0);
     const previous = timed[index - 1];
     const start = previous ? previous.audioEnd + pause : pause;
     if (start < 0 || (previous && start < previous.start)) {
@@ -57,7 +65,7 @@ export function calculateBlock(
     }
     if (previous && start >= previous.audioEnd) group += 1;
 
-    const previewDuration = dialogue.audio.durationSeconds ?? Math.max(0.8, Math.min(8, dialogue.text.length / 7));
+    const previewDuration = audioDuration ?? Math.max(0.8, Math.min(8, dialogue.text.length / 7));
     timed.push({
       dialogue,
       start,
@@ -67,7 +75,8 @@ export function calculateBlock(
     });
   });
 
-  const hold = block.endHoldSeconds ?? defaultEndHold;
+  const requestedHold = block.endHoldSeconds ?? defaultEndHold;
+  const hold = Number.isFinite(requestedHold) && requestedHold >= 0 ? requestedHold : 0;
   for (const item of timed) {
     const groupItems = timed.filter((candidate) => candidate.overlapGroup === item.overlapGroup);
     const last = groupItems.at(-1)!;
@@ -77,7 +86,7 @@ export function calculateBlock(
 
   return {
     dialogues: timed,
-    duration: Math.max(...timed.map((item) => item.audioEnd)) + hold,
+    duration: finiteOr(Math.max(...timed.map((item) => item.audioEnd)) + hold, 1),
     issues,
   };
 }
