@@ -51,6 +51,75 @@
 .editor-scroll {
   min-width: 0;
 }
+.editor-tabs-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.editor-tabs {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.editor-tabs button {
+  min-width: max-content;
+  max-width: 190px;
+  padding: 10px 13px 9px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  color: #68717c;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.editor-tabs button:hover {
+  color: var(--ink);
+  background: #f7f8fa;
+}
+.editor-tabs button.active {
+  position: relative;
+  color: var(--primary);
+  border-color: var(--line);
+  background: var(--paper);
+}
+.editor-tabs button small {
+  color: #9aa1aa;
+  font-size: 9px;
+  font-weight: 900;
+}
+.editor-tabs button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.editor-tab-actions {
+  flex: none;
+  display: flex;
+  gap: 7px;
+  padding-bottom: 7px;
+}
+.editor-tab-actions button {
+  padding: 8px 11px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.editor-tab-panel {
+  animation: editor-tab-in .16s ease-out;
+}
+@keyframes editor-tab-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .preview-column {
   position: sticky;
   top: 82px;
@@ -338,7 +407,7 @@
 }
 .diary-card.selected {
   border-color: #9daaf7;
-  box-shadow: 0 0 0 2px #4361ee13;
+  box-shadow: 0 0 0 1px #4361ee13;
 }
 .diary-heading, .block-heading {
   display: flex;

@@ -42,6 +42,19 @@
   .editor-topbar .secondary, .editor-topbar .primary {
     display: none;
   }
+  .editor-tabs-toolbar {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    gap: 6px;
+  }
+  .editor-tab-actions {
+    justify-content: flex-end;
+    padding-bottom: 0;
+  }
+  .editor-tabs button {
+    max-width: 160px;
+    padding: 9px 11px 8px;
+  }
   .dialogue-row {
     grid-template-columns: 24px 88px minmax(0, 1fr) 28px;
   }

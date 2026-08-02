@@ -23,6 +23,8 @@ type AssetRow = {
   error: string | null;
 };
 
+type EditorTab = "general" | "wish" | `diary:${string}`;
+
 const DIARY_DIALOGUE_DRAG_TYPE = "application/x-making-diary-dialogue";
 
 const hasDiaryDialogue = (dataTransfer: DataTransfer) =>
@@ -44,8 +46,9 @@ export function ProjectEditor({projectId}: {projectId: string}) {
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [saveState, setSaveState] = useState("読み込み中");
   const [renderState, setRenderState] = useState("");
-  const [selectedDiaryId, setSelectedDiaryId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<EditorTab>("general");
   const skipSave = useRef(true);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Promise.all([
@@ -94,6 +97,11 @@ export function ProjectEditor({projectId}: {projectId: string}) {
     return () => window.clearTimeout(timer);
   }, [record]);
 
+  useEffect(() => {
+    tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+      ?.scrollIntoView({block: "nearest", inline: "nearest"});
+  }, [activeTab, record?.document.diaries.length]);
+
   if (!record) return <div className="page"><div className="empty-state">{saveState}</div></div>;
   const project = record.document;
   const issues = validateProject(project, characters);
@@ -101,9 +109,14 @@ export function ProjectEditor({projectId}: {projectId: string}) {
   const addDiary = () => {
     const diary = createDiary();
     update((draft) => draft.diaries.push(diary));
-    setSelectedDiaryId(diary.id);
+    setActiveTab(`diary:${diary.id}`);
   };
   const sortDiaries = () => update((draft) => draft.diaries.sort((a, b) => a.date.localeCompare(b.date)));
+  const removeDiary = (diaryIndex: number) => {
+    const nextDiary = project.diaries[diaryIndex + 1] ?? project.diaries[diaryIndex - 1];
+    update((draft) => draft.diaries.splice(diaryIndex, 1));
+    setActiveTab(nextDiary ? `diary:${nextDiary.id}` : "general");
+  };
   const moveDiaryDialogue = (
     diaryId: string,
     fromBlockIndex: number,
@@ -196,21 +209,75 @@ export function ProjectEditor({projectId}: {projectId: string}) {
 
       <div className="editor-layout">
         <section className="editor-scroll">
-          <CastEditor project={project} characters={characters} update={update} />
-          <AssetLibrary assets={assets} onChanged={setAssets} />
-          <WishEditor project={project} characters={characters} update={update} />
-          <div className="section-heading">
-            <div><p className="eyebrow">DIARY</p><h2>日誌</h2></div>
-            <div className="diary-heading-actions">
-              <button className="secondary" onClick={sortDiaries}>日付順に並べる</button>
-              <button className="secondary" onClick={addDiary}>＋ 日誌を追加</button>
+          <div className="editor-tabs-toolbar">
+            <div ref={tabsRef} className="editor-tabs" role="tablist" aria-label="プロジェクトの編集項目">
+              <button
+                id="tab-general"
+                role="tab"
+                aria-selected={activeTab === "general"}
+                aria-controls="panel-general"
+                className={activeTab === "general" ? "active" : ""}
+                onClick={() => setActiveTab("general")}
+              >
+                <span>一般設定</span>
+              </button>
+              <button
+                id="tab-wish"
+                role="tab"
+                aria-selected={activeTab === "wish"}
+                aria-controls="panel-wish"
+                className={activeTab === "wish" ? "active" : ""}
+                onClick={() => setActiveTab("wish")}
+              >
+                <span>今作りたいもの</span>
+              </button>
+              {project.diaries.map((diary, diaryIndex) => {
+                const tabId: EditorTab = `diary:${diary.id}`;
+                return (
+                  <button
+                    id={`tab-diary-${diary.id}`}
+                    role="tab"
+                    aria-selected={activeTab === tabId}
+                    aria-controls={`panel-diary-${diary.id}`}
+                    className={activeTab === tabId ? "active" : ""}
+                    key={diary.id}
+                    title={diary.subtitle || `${diary.date}の日誌`}
+                    onClick={() => setActiveTab(tabId)}
+                  >
+                    <small>{String(diaryIndex + 1).padStart(2, "0")}</small>
+                    <span>{diary.date || "日付未設定"}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="editor-tab-actions">
+              {project.diaries.length > 1 ? (
+                <button className="secondary sort-diaries" onClick={sortDiaries}>日付順</button>
+              ) : null}
+              <button className="primary add-diary-tab" onClick={addDiary}>＋ 日誌を追加</button>
             </div>
           </div>
-          {project.diaries.map((diary, diaryIndex) => (
+
+          {activeTab === "general" ? (
+            <div id="panel-general" role="tabpanel" aria-labelledby="tab-general" className="editor-tab-panel">
+              <CastEditor project={project} characters={characters} update={update} />
+              <AssetLibrary assets={assets} onChanged={setAssets} />
+            </div>
+          ) : null}
+
+          {activeTab === "wish" ? (
+            <div id="panel-wish" role="tabpanel" aria-labelledby="tab-wish" className="editor-tab-panel">
+              <WishEditor project={project} characters={characters} update={update} />
+            </div>
+          ) : null}
+
+          {project.diaries.map((diary, diaryIndex) => activeTab === `diary:${diary.id}` ? (
             <article
-              className={`diary-card ${selectedDiaryId === diary.id ? "selected" : ""}`}
+              id={`panel-diary-${diary.id}`}
+              role="tabpanel"
+              aria-labelledby={`tab-diary-${diary.id}`}
+              className="diary-card editor-tab-panel selected"
               key={diary.id}
-              onClick={() => setSelectedDiaryId(diary.id)}
             >
               <div className="diary-heading">
                 <span className="order-badge">{String(diaryIndex + 1).padStart(2, "0")}</span>
@@ -225,9 +292,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
                     draft.diaries[diaryIndex].subtitle = event.target.value;
                   })}
                 />
-                <button className="icon danger" onClick={() => update((draft) => {
-                  draft.diaries.splice(diaryIndex, 1);
-                })}>×</button>
+                <button className="icon danger" title="この日誌を削除" onClick={() => removeDiary(diaryIndex)}>×</button>
               </div>
               {diary.blocks.map((block, blockIndex) => (
                 <BlockEditor
@@ -252,8 +317,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
                 <GeminiButton onGenerate={(memo) => generateDialogues(diary.id, memo)} />
               </div>
             </article>
-          ))}
-          {project.diaries.length === 0 ? <div className="empty-state">日誌を追加してください。</div> : null}
+          ) : null)}
         </section>
         <aside className="preview-column">
           <VideoPreview project={project} characters={characters} />
