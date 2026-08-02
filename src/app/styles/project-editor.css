@@ -409,7 +409,7 @@
   border-color: #9daaf7;
   box-shadow: 0 0 0 1px #4361ee13;
 }
-.diary-heading, .block-heading {
+.diary-heading {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -419,7 +419,7 @@
   background: #f2f4f7;
   border-bottom: 1px solid var(--line);
 }
-.diary-heading input, .block-heading input {
+.diary-heading input {
   min-width: 0;
   padding: 8px;
   border: 1px solid var(--line);
@@ -454,10 +454,6 @@
   background: #fbfcfd;
   overflow: hidden;
 }
-.block-heading {
-  padding: 10px;
-  border-bottom: 1px solid #e1e5ea;
-}
 .asset-control {
   padding: 8px 10px;
   display: flex;
@@ -466,6 +462,13 @@
   gap: 7px;
   border-bottom: 1px solid #e1e5ea;
   background: #f5f7f9;
+}
+.asset-control .asset-select {
+  min-width: 140px;
+}
+.asset-control .remove-block {
+  flex: none;
+  margin-left: auto;
 }
 .asset-control select, .asset-control input {
   padding: 6px;
@@ -483,13 +486,11 @@
 .asset-control label input {
   width: 54px;
 }
-.block-heading > input {
-  flex: 1;
-  border: 0;
-  background: transparent;
-}
 .drag-handle {
+  flex: none;
   color: #a3abb4;
+  font-size: 18px;
+  line-height: 1;
 }
 .inline-field {
   display: flex;

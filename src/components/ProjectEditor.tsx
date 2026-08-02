@@ -26,6 +26,7 @@ type AssetRow = {
 type EditorTab = "general" | "wish" | `diary:${string}`;
 
 const DIARY_DIALOGUE_DRAG_TYPE = "application/x-making-diary-dialogue";
+const WISH_LIST_DIALOGUE_SCOPE = "__wish_list__";
 
 const hasDiaryDialogue = (dataTransfer: DataTransfer) =>
   Array.from(dataTransfer.types).includes(DIARY_DIALOGUE_DRAG_TYPE);
@@ -272,51 +273,54 @@ export function ProjectEditor({projectId}: {projectId: string}) {
           ) : null}
 
           {project.diaries.map((diary, diaryIndex) => activeTab === `diary:${diary.id}` ? (
-            <article
+            <div
               id={`panel-diary-${diary.id}`}
               role="tabpanel"
               aria-labelledby={`tab-diary-${diary.id}`}
-              className="diary-card editor-tab-panel selected"
+              className="editor-tab-panel"
               key={diary.id}
             >
-              <div className="diary-heading">
-                <span className="order-badge">{String(diaryIndex + 1).padStart(2, "0")}</span>
-                <input type="date" value={diary.date} onChange={(event) => update((draft) => {
-                  draft.diaries[diaryIndex].date = event.target.value;
-                })} />
-                <input
-                  className={`grow ${diary.subtitle.trim() === "" ? "invalid" : ""}`}
-                  placeholder="その日の概要"
-                  value={diary.subtitle}
-                  onChange={(event) => update((draft) => {
-                    draft.diaries[diaryIndex].subtitle = event.target.value;
-                  })}
-                />
-                <button className="icon danger" title="この日誌を削除" onClick={() => removeDiary(diaryIndex)}>×</button>
-              </div>
-              {diary.blocks.map((block, blockIndex) => (
-                <BlockEditor
-                  key={block.id}
-                  block={block}
-                  diaryId={diary.id}
-                  blockIndex={blockIndex}
-                  characters={characters}
-                  projectCharacterIds={project.characterIds}
-                  assets={assets}
-                  updateBlock={(recipe) => update((draft) => {
-                    recipe(draft.diaries[diaryIndex].blocks[blockIndex]);
-                  })}
-                  remove={() => update((draft) => draft.diaries[diaryIndex].blocks.splice(blockIndex, 1))}
-                  moveDialogue={moveDiaryDialogue}
-                />
-              ))}
-              <div className="diary-actions">
-                <button className="secondary" onClick={() => update((draft) => {
-                  draft.diaries[diaryIndex].blocks.push(createBlock());
-                })}>＋ コンテンツ</button>
-                <GeminiButton onGenerate={(memo) => generateDialogues(diary.id, memo)} />
-              </div>
-            </article>
+              <AssetLibrary assets={assets} onChanged={setAssets} />
+              <article className="diary-card selected">
+                <div className="diary-heading">
+                  <span className="order-badge">{String(diaryIndex + 1).padStart(2, "0")}</span>
+                  <input type="date" value={diary.date} onChange={(event) => update((draft) => {
+                    draft.diaries[diaryIndex].date = event.target.value;
+                  })} />
+                  <input
+                    className={`grow ${diary.subtitle.trim() === "" ? "invalid" : ""}`}
+                    placeholder="その日の概要"
+                    value={diary.subtitle}
+                    onChange={(event) => update((draft) => {
+                      draft.diaries[diaryIndex].subtitle = event.target.value;
+                    })}
+                  />
+                  <button className="icon danger" title="この日誌を削除" onClick={() => removeDiary(diaryIndex)}>×</button>
+                </div>
+                {diary.blocks.map((block, blockIndex) => (
+                  <BlockEditor
+                    key={block.id}
+                    block={block}
+                    diaryId={diary.id}
+                    blockIndex={blockIndex}
+                    characters={characters}
+                    projectCharacterIds={project.characterIds}
+                    assets={assets}
+                    updateBlock={(recipe) => update((draft) => {
+                      recipe(draft.diaries[diaryIndex].blocks[blockIndex]);
+                    })}
+                    remove={() => update((draft) => draft.diaries[diaryIndex].blocks.splice(blockIndex, 1))}
+                    moveDialogue={moveDiaryDialogue}
+                  />
+                ))}
+                <div className="diary-actions">
+                  <button className="secondary" onClick={() => update((draft) => {
+                    draft.diaries[diaryIndex].blocks.push(createBlock());
+                  })}>＋ コンテンツ</button>
+                  <GeminiButton onGenerate={(memo) => generateDialogues(diary.id, memo)} />
+                </div>
+              </article>
+            </div>
           ) : null)}
         </section>
         <aside className="preview-column">
@@ -448,6 +452,16 @@ function WishEditor({project, characters, update}: {
       <div className="wish-dialogues">
         {project.wishList.dialogues.map((dialogue, index) => (
           <DialogueEditor key={dialogue.id} dialogue={dialogue} index={index} characters={cast}
+            dragLocation={{diaryId: WISH_LIST_DIALOGUE_SCOPE, blockIndex: 0, dialogueIndex: index}}
+            onDropDialogue={(from, toDialogueIndex) => update((draft) => {
+              const dialogues = draft.wishList!.dialogues;
+              const [moved] = dialogues.splice(from.dialogueIndex, 1);
+              if (!moved) return;
+              const insertionIndex = from.dialogueIndex < toDialogueIndex
+                ? toDialogueIndex - 1
+                : toDialogueIndex;
+              dialogues.splice(Math.max(0, Math.min(insertionIndex, dialogues.length)), 0, moved);
+            })}
             updateDialogue={(recipe) => update((draft) => recipe(draft.wishList!.dialogues[index]))}
             remove={() => update((draft) => draft.wishList!.dialogues.splice(index, 1))}
           />
@@ -490,15 +504,9 @@ function BlockEditor({block, diaryId, blockIndex, characters, projectCharacterId
   const cast = projectCharacterIds.map((id) => characters.find((item) => item.id === id)).filter(Boolean) as Character[];
   return (
     <section className="block-card">
-      <div className="block-heading">
-        <span className="drag-handle">⠿</span>
-        <input placeholder="コンテンツ名（任意）" value={block.title} onChange={(event) =>
-          updateBlock((draft) => { draft.title = event.target.value; })
-        } />
-        <button className="icon danger" onClick={remove}>×</button>
-      </div>
       <div className="asset-control">
-        <select value={block.asset?.assetId ?? ""} onChange={(event) => {
+        <span className="drag-handle" aria-hidden="true">⠿</span>
+        <select className="asset-select" aria-label="素材" value={block.asset?.assetId ?? ""} onChange={(event) => {
           const asset = assets.find((item) => item.id === event.target.value);
           updateBlock((draft) => {
             draft.asset = asset ? {
@@ -543,6 +551,7 @@ function BlockEditor({block, diaryId, blockIndex, characters, projectCharacterId
             ) : null}
           </>
         ) : null}
+        <button className="icon danger remove-block" title="このコンテンツを削除" aria-label="このコンテンツを削除" onClick={remove}>×</button>
       </div>
       {block.dialogues.map((dialogue, index) => (
         <DialogueEditor
