@@ -12,17 +12,27 @@ export async function POST(request: Request) {
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
     if (!project) return NextResponse.json({error: "プロジェクトが見つかりません"}, {status: 404});
     const characterRows = await db.select().from(characters);
-    const issues = validateProject(project.document, characterRows.map((row) => row.data));
+    const issues = validateProject(
+      project.document,
+      characterRows.map((row) => row.data),
+    );
     if (issues.length) return NextResponse.json({error: "レンダリング前の修正が必要です", issues}, {status: 422});
-    const [job] = await db.insert(renderJobs).values({
-      projectId,
-      snapshot: project.document,
-    }).returning();
-    await renderQueue.add("render", {renderJobId: job.id}, {
-      jobId: job.id,
-      removeOnComplete: 50,
-      removeOnFail: 50,
-    });
+    const [job] = await db
+      .insert(renderJobs)
+      .values({
+        projectId,
+        snapshot: project.document,
+      })
+      .returning();
+    await renderQueue.add(
+      "render",
+      {renderJobId: job.id},
+      {
+        jobId: job.id,
+        removeOnComplete: 50,
+        removeOnFail: 50,
+      },
+    );
     return NextResponse.json(job, {status: 202});
   } catch (error) {
     return apiError(error);

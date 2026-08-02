@@ -10,5 +10,7 @@ export async function GET(_: Request, {params}: {params: Promise<{name: string}>
     return new NextResponse(await readFile(path.join(dataDir, "psd-previews", name)), {
       headers: {"content-type": "image/png", "cache-control": "public, max-age=31536000, immutable"},
     });
-  } catch { return new NextResponse(null, {status: 404}); }
+  } catch {
+    return new NextResponse(null, {status: 404});
+  }
 }

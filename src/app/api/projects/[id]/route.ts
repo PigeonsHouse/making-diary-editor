@@ -20,18 +20,19 @@ export async function PATCH(request: Request, context: Context) {
     const input = await request.json();
     const document = projectDocumentSchema.parse(input.document);
     const revision = Number(input.revision);
-    const [row] = await db.update(projects).set({
-      document,
-      name: document.name,
-      revision: revision + 1,
-      updatedAt: new Date(),
-    }).where(and(eq(projects.id, id), eq(projects.revision, revision))).returning();
+    const [row] = await db
+      .update(projects)
+      .set({
+        document,
+        name: document.name,
+        revision: revision + 1,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(projects.id, id), eq(projects.revision, revision)))
+      .returning();
 
     if (!row) {
-      return NextResponse.json(
-        {error: "別の画面で更新されています。再読み込みしてください"},
-        {status: 409},
-      );
+      return NextResponse.json({error: "別の画面で更新されています。再読み込みしてください"}, {status: 409});
     }
     return NextResponse.json(row);
   } catch (error) {

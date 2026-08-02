@@ -13,9 +13,8 @@ export async function GET(_: Request, context: Context) {
     return NextResponse.json({error: "素材を利用できません"}, {status: 404});
   }
   const content = await readFile(asset.normalizedPath);
-  const contentType = asset.kind === "video"
-    ? "video/mp4"
-    : asset.normalizedPath.endsWith(".png") ? "image/png" : "image/jpeg";
+  const contentType =
+    asset.kind === "video" ? "video/mp4" : asset.normalizedPath.endsWith(".png") ? "image/png" : "image/jpeg";
   return new NextResponse(content, {
     headers: {"content-type": contentType, "cache-control": "public, max-age=31536000, immutable"},
   });

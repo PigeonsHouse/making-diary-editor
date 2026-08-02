@@ -5,10 +5,7 @@ import {EDITOR_CONSTANTS} from "@/domain/defaults";
 import type {Character, ProjectDocument} from "@/domain/types";
 import {DiaryVideo, getVideoDuration} from "@/remotion/DiaryVideo";
 
-export function VideoPreview({project, characters}: {
-  project: ProjectDocument;
-  characters: Character[];
-}) {
+export function VideoPreview({project, characters}: {project: ProjectDocument; characters: Character[]}) {
   return (
     <div className="preview-shell">
       <Player

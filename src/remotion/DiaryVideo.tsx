@@ -77,12 +77,7 @@ export function DiaryVideo({project, characters, defaultEndHold}: Props) {
     const duration = secondsToFrames(introSeconds + blockSeconds, fps);
     sequences.push(
       <Sequence key={diary.id} from={cursor} durationInFrames={duration}>
-        <DiaryScene
-          project={project}
-          diary={diary}
-          characters={characters}
-          defaultEndHold={defaultEndHold}
-        />
+        <DiaryScene project={project} diary={diary} characters={characters} defaultEndHold={defaultEndHold} />
       </Sequence>,
     );
     cursor += duration;
@@ -92,11 +87,16 @@ export function DiaryVideo({project, characters, defaultEndHold}: Props) {
 }
 
 function GridBackground() {
-  return <AbsoluteFill style={{
-    backgroundColor: "#f8fafc",
-    backgroundImage: "linear-gradient(#dce1e7 2px, transparent 2px), linear-gradient(90deg, #dce1e7 2px, transparent 2px)",
-    backgroundSize: "48px 48px",
-  }} />;
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: "#f8fafc",
+        backgroundImage:
+          "linear-gradient(#dce1e7 2px, transparent 2px), linear-gradient(90deg, #dce1e7 2px, transparent 2px)",
+        backgroundSize: "48px 48px",
+      }}
+    />
+  );
 }
 
 function AssetBackground({block}: {block?: ContentBlock}) {
@@ -129,10 +129,7 @@ function AssetBackground({block}: {block?: ContentBlock}) {
 function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary: DiaryEntry}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const introFrames = secondsToFrames(
-    EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds,
-    fps,
-  );
+  const introFrames = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds, fps);
   let blockCursor = introFrames;
   let activeBlock = diary.blocks[0];
   let blockLocalFrame = frame;
@@ -146,9 +143,10 @@ function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary
     blockCursor += duration;
   }
   const centerEnd = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds, fps);
-  const fade = frame < introFrames
-    ? interpolate(frame, [centerEnd, introFrames], [0, 1], {extrapolateLeft: "clamp", extrapolateRight: "clamp"})
-    : 1;
+  const fade =
+    frame < introFrames
+      ? interpolate(frame, [centerEnd, introFrames], [0, 1], {extrapolateLeft: "clamp", extrapolateRight: "clamp"})
+      : 1;
 
   return (
     <AbsoluteFill>
@@ -158,8 +156,12 @@ function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary
         <div className="video-date-center">{formatDate(diary.date)}</div>
       ) : (
         <>
-          <div className="video-date-corner" style={{opacity: fade}}>{formatDate(diary.date)}</div>
-          <div className="video-subtitle-corner" style={{opacity: fade}}>{diary.subtitle}</div>
+          <div className="video-date-corner" style={{opacity: fade}}>
+            {formatDate(diary.date)}
+          </div>
+          <div className="video-subtitle-corner" style={{opacity: fade}}>
+            {diary.subtitle}
+          </div>
           <div className="video-dialogue-panel" style={{opacity: fade}} />
         </>
       )}
@@ -193,10 +195,7 @@ function Avatars({project, characters}: Props) {
     <>
       {selected.map((character, index) => {
         const {side, level, top, edgeOffsetXPx} = positions[index];
-        const flipped = isAvatarFlipped(
-          index,
-          project.characterAvatarOverrides[character.id]?.flipHorizontal,
-        );
+        const flipped = isAvatarFlipped(index, project.characterAvatarOverrides[character.id]?.flipHorizontal);
         if (!character.avatar.previewUrl) return null;
         return (
           <Img
@@ -236,15 +235,17 @@ function DialogueLayer({
   const visible = timing.dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd);
   return (
     <>
-      {timing.dialogues.map((item) => item.dialogue.audio.url ? (
-        <Sequence
-          key={`audio-${item.dialogue.id}`}
-          from={dialogueAudioStartFrame(blockStartFrame, item.start, fps)}
-          durationInFrames={secondsToFrames(item.audioEnd - item.start, fps)}
-        >
-          <Audio src={item.dialogue.audio.url} />
-        </Sequence>
-      ) : null)}
+      {timing.dialogues.map((item) =>
+        item.dialogue.audio.url ? (
+          <Sequence
+            key={`audio-${item.dialogue.id}`}
+            from={dialogueAudioStartFrame(blockStartFrame, item.start, fps)}
+            durationInFrames={secondsToFrames(item.audioEnd - item.start, fps)}
+          >
+            <Audio src={item.dialogue.audio.url} />
+          </Sequence>
+        ) : null,
+      )}
       <div className="video-dialogue-stack">
         {visible.map((item, index) => {
           const character = characters.find((candidate) => candidate.id === item.dialogue.characterId);

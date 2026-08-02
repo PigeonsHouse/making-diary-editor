@@ -7,7 +7,7 @@
   min-width: 0;
 }
 .voice-slider.disabled {
-  opacity: .6;
+  opacity: 0.6;
 }
 .voice-slider-heading {
   display: grid;
@@ -40,7 +40,9 @@
   white-space: nowrap;
   font-size: 9px;
 }
-.voice-slider input[type="range"], .field-grid .voice-slider input[type="range"], .dialogue-row .voice-slider input[type="range"] {
+.voice-slider input[type="range"],
+.field-grid .voice-slider input[type="range"],
+.dialogue-row .voice-slider input[type="range"] {
   width: 100%;
   height: 18px;
   margin: 0;

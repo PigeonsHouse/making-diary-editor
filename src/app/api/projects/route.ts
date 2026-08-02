@@ -15,10 +15,13 @@ export async function POST(request: Request) {
   try {
     const input = await request.json().catch(() => ({}));
     const document = projectDocumentSchema.parse(createProject(input.name));
-    const [row] = await db.insert(projects).values({
-      name: document.name,
-      document,
-    }).returning();
+    const [row] = await db
+      .insert(projects)
+      .values({
+        name: document.name,
+        document,
+      })
+      .returning();
     return NextResponse.json(row, {status: 201});
   } catch (error) {
     return apiError(error);

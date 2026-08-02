@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+data
+backup
+public
+pnpm-lock.yaml
+*.md
+*.sql

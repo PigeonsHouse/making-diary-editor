@@ -33,13 +33,15 @@
     gap: 12px;
     font-size: 11px;
   }
-  .page, .editor-page {
+  .page,
+  .editor-page {
     padding: 24px 12px 60px;
   }
   .page-heading {
     align-items: flex-start;
   }
-  .editor-topbar .secondary, .editor-topbar .primary {
+  .editor-topbar .secondary,
+  .editor-topbar .primary {
     display: none;
   }
   .editor-tabs-toolbar {

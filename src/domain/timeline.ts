@@ -14,16 +14,11 @@ export type TimelineIssue = {
   message: string;
 };
 
-export function dialogueAudioStartFrame(
-  blockStartFrame: number,
-  dialogueStartSeconds: number,
-  fps: number,
-) {
+export function dialogueAudioStartFrame(blockStartFrame: number, dialogueStartSeconds: number, fps: number) {
   return blockStartFrame + Math.round(dialogueStartSeconds * fps);
 }
 
-const characterMap = (characters: Character[]) =>
-  new Map(characters.map((character) => [character.id, character]));
+const characterMap = (characters: Character[]) => new Map(characters.map((character) => [character.id, character]));
 
 export function calculateBlock(
   block: ContentBlock,
@@ -53,8 +48,7 @@ export function calculateBlock(
       issues.push({path: dialogue.id, message: "音声が生成されていません"});
     }
 
-    const pause = dialogue.pauseBeforeSeconds ??
-      (index === 0 ? 0 : character?.defaultPauseBeforeSeconds ?? 0);
+    const pause = dialogue.pauseBeforeSeconds ?? (index === 0 ? 0 : (character?.defaultPauseBeforeSeconds ?? 0));
     const previous = timed[index - 1];
     const start = previous ? previous.audioEnd + pause : pause;
     if (start < 0 || (previous && start < previous.start)) {
@@ -62,8 +56,7 @@ export function calculateBlock(
     }
     if (previous && start >= previous.audioEnd) group += 1;
 
-    const previewDuration = dialogue.audio.durationSeconds ??
-      Math.max(0.8, Math.min(8, dialogue.text.length / 7));
+    const previewDuration = dialogue.audio.durationSeconds ?? Math.max(0.8, Math.min(8, dialogue.text.length / 7));
     timed.push({
       dialogue,
       start,

@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const host = process.env.VOICEVOX_URL ?? "http://localhost:50021";
     const speakersResponse = await fetch(new URL("/speakers", host));
     if (!speakersResponse.ok) throw new Error("VOICEVOXの話者一覧を取得できません");
-    const speakers = await speakersResponse.json() as Array<{
+    const speakers = (await speakersResponse.json()) as Array<{
       name: string;
       styles: Array<{name: string; id: number}>;
     }>;

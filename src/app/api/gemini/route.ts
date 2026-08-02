@@ -5,11 +5,15 @@ import {apiError} from "@/server/http";
 
 const inputSchema = z.object({
   memo: z.string().min(1),
-  characters: z.array(z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-    personality: z.string(),
-  })).min(1),
+  characters: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string(),
+        personality: z.string(),
+      }),
+    )
+    .min(1),
 });
 
 export async function POST(request: Request) {
@@ -63,10 +67,14 @@ export async function POST(request: Request) {
     if (!response.ok) throw new Error(`Gemini API: ${response.status} ${await response.text()}`);
     const body = await response.json();
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
-    const generated = z.array(z.object({
-      characterId: z.string().uuid(),
-      text: z.string().min(1),
-    })).parse(JSON.parse(text));
+    const generated = z
+      .array(
+        z.object({
+          characterId: z.string().uuid(),
+          text: z.string().min(1),
+        }),
+      )
+      .parse(JSON.parse(text));
     const allowed = new Set(input.characters.map((item) => item.id));
     return NextResponse.json(generated.filter((item) => allowed.has(item.characterId)));
   } catch (error) {

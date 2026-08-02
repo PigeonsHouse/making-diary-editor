@@ -12,7 +12,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="ja">
       <body>
         <header className="app-header">
-          <Link href="/" className="brand">MAKING DIARY</Link>
+          <Link href="/" className="brand">
+            MAKING DIARY
+          </Link>
           <nav>
             <Link href="/">プロジェクト</Link>
             <Link href="/characters">キャラクター</Link>

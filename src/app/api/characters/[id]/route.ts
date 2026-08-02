@@ -13,11 +13,15 @@ export async function PATCH(request: Request, context: Context) {
     const input = await request.json();
     const data = characterSchema.parse(input.data);
     const revision = Number(input.revision);
-    const [row] = await db.update(characters).set({
-      data,
-      revision: revision + 1,
-      updatedAt: new Date(),
-    }).where(and(eq(characters.id, id), eq(characters.revision, revision))).returning();
+    const [row] = await db
+      .update(characters)
+      .set({
+        data,
+        revision: revision + 1,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(characters.id, id), eq(characters.revision, revision)))
+      .returning();
     if (!row) return NextResponse.json({error: "競合が発生しました"}, {status: 409});
     return NextResponse.json(row);
   } catch (error) {

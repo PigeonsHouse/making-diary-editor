@@ -20,9 +20,11 @@ export async function DELETE(_: Request, context: Context) {
       db.select({name: projects.name, document: projects.document}).from(projects),
       db.select({data: characters.data}).from(characters),
     ]);
-    const usedByProjects = projectRows.filter(({document}) => document.diaries.some((diary) =>
-      diary.blocks.some((block) => block.asset?.assetId === id),
-    )).map(({name}) => name);
+    const usedByProjects = projectRows
+      .filter(({document}) =>
+        document.diaries.some((diary) => diary.blocks.some((block) => block.asset?.assetId === id)),
+      )
+      .map(({name}) => name);
     const usedByCharacters = characterRows.filter(({data}) => data.psdAssetId === id).map(({data}) => data.name);
     if (usedByProjects.length || usedByCharacters.length) {
       const references = [
@@ -33,10 +35,16 @@ export async function DELETE(_: Request, context: Context) {
     }
 
     await db.delete(assets).where(eq(assets.id, id));
-    const paths = [...new Set([asset.originalPath, asset.normalizedPath].filter((value): value is string => Boolean(value)))];
-    await Promise.all(paths.map((filePath) => unlink(filePath).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== "ENOENT") throw error;
-    })));
+    const paths = [
+      ...new Set([asset.originalPath, asset.normalizedPath].filter((value): value is string => Boolean(value))),
+    ];
+    await Promise.all(
+      paths.map((filePath) =>
+        unlink(filePath).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== "ENOENT") throw error;
+        }),
+      ),
+    );
     return NextResponse.json({ok: true});
   } catch (error) {
     return apiError(error);

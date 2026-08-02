@@ -14,12 +14,16 @@ async function getAsset(id: string) {
     throw new Error("PSDを利用できません");
   }
   if (asset.kind !== "psd" || asset.status !== "ready") {
-    const [repaired] = await db.update(assets).set({
-      kind: "psd",
-      status: "ready",
-      normalizedPath: asset.originalPath,
-      error: null,
-    }).where(eq(assets.id, id)).returning();
+    const [repaired] = await db
+      .update(assets)
+      .set({
+        kind: "psd",
+        status: "ready",
+        normalizedPath: asset.originalPath,
+        error: null,
+      })
+      .where(eq(assets.id, id))
+      .returning();
     return repaired;
   }
   return asset;
@@ -39,11 +43,16 @@ export async function POST(request: Request, context: Context) {
     const asset = await getAsset((await context.params).assetId);
     const body = await request.json();
     const selections = z.record(z.string(), z.string()).parse(body.selections);
-    const filters = z.record(z.string(), z.object({
-      targets: z.array(z.string()),
-      choiceOrder: z.array(z.string()).optional(),
-      choices: z.record(z.string(), z.object({show: z.array(z.string()), hide: z.array(z.string()).optional()})),
-    })).parse(body.filters);
+    const filters = z
+      .record(
+        z.string(),
+        z.object({
+          targets: z.array(z.string()),
+          choiceOrder: z.array(z.string()).optional(),
+          choices: z.record(z.string(), z.object({show: z.array(z.string()), hide: z.array(z.string()).optional()})),
+        }),
+      )
+      .parse(body.filters);
     const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
     const hash = await renderPsdPreview(asset.originalPath, filters, selections, path.join(dataDir, "psd-previews"));
     return NextResponse.json({url: `/api/files/psd/${hash}.png`});

@@ -6,8 +6,7 @@ export type AvatarPosition = {
   edgeOffsetXPx: number;
 };
 
-export const isAvatarFlipped = (index: number, override?: boolean) =>
-  override ?? index % 2 === 1;
+export const isAvatarFlipped = (index: number, override?: boolean) => override ?? index % 2 === 1;
 
 export function calculateAvatarPositions(
   characters: Array<{id: string; edgeOffsetXPx: number; peekYPx: number}>,

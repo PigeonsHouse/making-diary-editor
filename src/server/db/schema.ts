@@ -32,7 +32,9 @@ export const assets = pgTable("assets", {
 
 export const renderJobs = pgTable("render_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  projectId: uuid("project_id").notNull().references(() => projects.id),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id),
   status: text("status").notNull().default("queued"),
   progress: integer("progress").notNull().default(0),
   snapshot: jsonb("snapshot").$type<ProjectDocument>().notNull(),

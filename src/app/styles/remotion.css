@@ -7,10 +7,11 @@
   color: #1f2937;
   font-size: 104px;
   font-weight: 200;
-  letter-spacing: .18em;
+  letter-spacing: 0.18em;
   z-index: 30;
 }
-.video-date-corner, .video-subtitle-corner {
+.video-date-corner,
+.video-subtitle-corner {
   position: absolute;
   top: 48px;
   z-index: 30;
@@ -18,7 +19,7 @@
   color: #fff;
   background: #1d2530d9;
   font-size: 34px;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
 }
 .video-date-corner {
   left: 48px;
@@ -81,18 +82,18 @@
   list-style: disc outside;
 }
 .video-wish-markdown ul ul {
-  margin-top: .08em;
+  margin-top: 0.08em;
   list-style-type: circle;
 }
 .video-wish-markdown ul ul ul {
   list-style-type: square;
 }
 .video-wish-markdown li {
-  padding-left: .18em;
+  padding-left: 0.18em;
 }
 .video-wish-markdown del {
   color: #66707a;
-  text-decoration-thickness: .08em;
+  text-decoration-thickness: 0.08em;
 }
 .video-notebook .video-dialogue-stack {
   bottom: 55px;

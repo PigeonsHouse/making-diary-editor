@@ -4,17 +4,25 @@ type ListItem = {text: string; children: ListItem[]};
 
 export function WishMarkdown({markdown}: {markdown: string}) {
   const items = parseList(markdown);
-  return <div className="video-wish-markdown">
-    <h2>今作りたいもの</h2>
-    <List items={items} />
-  </div>;
+  return (
+    <div className="video-wish-markdown">
+      <h2>今作りたいもの</h2>
+      <List items={items} />
+    </div>
+  );
 }
 
 function List({items}: {items: ListItem[]}) {
-  return <ul>{items.map((item, index) => <li key={`${item.text}-${index}`}>
-    <InlineMarkdown text={item.text} />
-    {item.children.length ? <List items={item.children} /> : null}
-  </li>)}</ul>;
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={`${item.text}-${index}`}>
+          <InlineMarkdown text={item.text} />
+          {item.children.length ? <List items={item.children} /> : null}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function InlineMarkdown({text}: {text: string}) {

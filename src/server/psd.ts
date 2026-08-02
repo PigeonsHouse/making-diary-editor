@@ -10,11 +10,12 @@ initializeCanvas(
   () => {
     throw new Error("Canvas rendering is not used by PSD preview generation.");
   },
-  (width, height) => ({
-    data: new Uint8ClampedArray(width * height * 4),
-    width,
-    height,
-  }) as ImageData,
+  (width, height) =>
+    ({
+      data: new Uint8ClampedArray(width * height * 4),
+      width,
+      height,
+    }) as ImageData,
 );
 
 export type PsdTreeNode = {
@@ -24,11 +25,14 @@ export type PsdTreeNode = {
   children: PsdTreeNode[];
 };
 
-export type PsdFilters = Record<string, {
-  targets: string[];
-  choiceOrder?: string[];
-  choices: Record<string, {show: string[]; hide?: string[]}>;
-}>;
+export type PsdFilters = Record<
+  string,
+  {
+    targets: string[];
+    choiceOrder?: string[];
+    choices: Record<string, {show: string[]; hide?: string[]}>;
+  }
+>;
 
 const nameOf = (layer: Layer) => (layer.name ?? "名称なし").replace(/^[/!\*]+/, "");
 
@@ -39,15 +43,16 @@ export async function readPsdTree(filePath: string): Promise<PsdTreeNode[]> {
     skipThumbnail: true,
     skipLinkedFilesData: true,
   });
-  const walk = (layers: Layer[], parents: string[]): PsdTreeNode[] => layers.map((layer) => {
-    const current = [...parents, nameOf(layer)];
-    return {
-      path: current.join("/"),
-      name: nameOf(layer),
-      type: layer.children ? "group" : "layer",
-      children: layer.children ? walk(layer.children, current) : [],
-    };
-  });
+  const walk = (layers: Layer[], parents: string[]): PsdTreeNode[] =>
+    layers.map((layer) => {
+      const current = [...parents, nameOf(layer)];
+      return {
+        path: current.join("/"),
+        name: nameOf(layer),
+        type: layer.children ? "group" : "layer",
+        children: layer.children ? walk(layer.children, current) : [],
+      };
+    });
   return walk(psd.children ?? [], []);
 }
 
@@ -74,26 +79,26 @@ export async function renderPsdPreview(
     const top = layer.top ?? 0;
     const opacity = Math.max(0, Math.min(1, layer.opacity ?? 1));
     const multiply = layer.blendMode === "multiply" || /[（(]乗算[)）]/.test(layer.name ?? "");
-    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
-      const dx = left + x; const dy = top + y;
-      if (dx < 0 || dy < 0 || dx >= psd.width || dy >= psd.height) continue;
-      const si = (y * width + x) * 4; const di = (dy * psd.width + dx) * 4;
-      const sa = (data[si + 3] / 255) * opacity; const da = output[di + 3] / 255;
-      const oa = sa + da * (1 - sa); if (oa === 0) continue;
-      for (let c = 0; c < 3; c++) {
-        const sourceColor = data[si + c] / 255;
-        const destinationColor = output[di + c] / 255;
-        const blendedColor = multiply
-          ? sourceColor * destinationColor
-          : sourceColor;
-        const premultiplied =
-          sa * (1 - da) * sourceColor +
-          sa * da * blendedColor +
-          (1 - sa) * da * destinationColor;
-        output[di + c] = Math.round((premultiplied / oa) * 255);
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const dx = left + x;
+        const dy = top + y;
+        if (dx < 0 || dy < 0 || dx >= psd.width || dy >= psd.height) continue;
+        const si = (y * width + x) * 4;
+        const di = (dy * psd.width + dx) * 4;
+        const sa = (data[si + 3] / 255) * opacity;
+        const da = output[di + 3] / 255;
+        const oa = sa + da * (1 - sa);
+        if (oa === 0) continue;
+        for (let c = 0; c < 3; c++) {
+          const sourceColor = data[si + c] / 255;
+          const destinationColor = output[di + c] / 255;
+          const blendedColor = multiply ? sourceColor * destinationColor : sourceColor;
+          const premultiplied = sa * (1 - da) * sourceColor + sa * da * blendedColor + (1 - sa) * da * destinationColor;
+          output[di + c] = Math.round((premultiplied / oa) * 255);
+        }
+        output[di + 3] = Math.round(oa * 255);
       }
-      output[di + 3] = Math.round(oa * 255);
-    }
   };
   const hiddenPrefixes: string[] = [];
   const visiblePrefixes: string[] = [];
@@ -103,12 +108,9 @@ export async function renderPsdPreview(
     hiddenPrefixes.push(...filter.targets, ...(choice.hide ?? []));
     visiblePrefixes.push(...choice.show);
   }
-  const matches = (pathValue: string, prefixes: string[]) => prefixes.some(
-    (prefix) => pathValue === prefix || pathValue.startsWith(`${prefix}/`),
-  );
-  const hasVisibleChild = (pathValue: string) => visiblePrefixes.some(
-    (prefix) => prefix.startsWith(`${pathValue}/`),
-  );
+  const matches = (pathValue: string, prefixes: string[]) =>
+    prefixes.some((prefix) => pathValue === prefix || pathValue.startsWith(`${prefix}/`));
+  const hasVisibleChild = (pathValue: string) => visiblePrefixes.some((prefix) => prefix.startsWith(`${pathValue}/`));
   const walk = (layers: Layer[], parents: string[], parentVisible: boolean) => {
     for (const layer of layers) {
       const current = [...parents, nameOf(layer)];
@@ -118,8 +120,7 @@ export async function renderPsdPreview(
       const visible = forcedVisible || (parentVisible && !layer.hidden && !hidden);
       if (layer.children) {
         if (visible || hasVisibleChild(currentPath)) walk(layer.children, current, visible);
-      }
-      else if (visible) draw(layer);
+      } else if (visible) draw(layer);
     }
   };
   walk(psd.children ?? [], [], true);
