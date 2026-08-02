@@ -202,7 +202,7 @@ function DialogueLayer({
             <div
               key={item.dialogue.id}
               className="video-dialogue"
-              style={{ WebkitTextStroke: `5px ${character?.color ?? "#64748b"}`, zIndex: index }}
+              style={{ WebkitTextStroke: `10px ${character?.color ?? "#64748b"}`, zIndex: index }}
             >
               {item.dialogue.text}
             </div>
