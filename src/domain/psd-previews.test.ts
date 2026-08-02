@@ -40,7 +40,7 @@ describe("createDialoguePsdPreviewSpecs", () => {
     expect(createDialoguePsdPreviewSpecs(project, [character])).toEqual([]);
   });
 
-  it("uses the latest active dialogue preview for its character", () => {
+  it("uses the latest started dialogue preview for the same character", () => {
     const character = createCharacter();
     const first = createDialogue(character.id);
     const second = createDialogue(character.id);
@@ -52,5 +52,30 @@ describe("createDialoguePsdPreviewSpecs", () => {
       }),
     ).toBe("second.png");
     expect(resolveDialogueAvatarUrl("default.png", character.id, [first], {})).toBe("default.png");
+  });
+
+  it("returns to the default when the next dialogue has no override", () => {
+    const character = createCharacter();
+    const first = createDialogue(character.id);
+    const second = createDialogue(character.id);
+
+    expect(
+      resolveDialogueAvatarUrl("default.png", character.id, [first, second], {
+        [first.id]: "first.png",
+      }),
+    ).toBe("default.png");
+  });
+
+  it("keeps an override when another character starts speaking", () => {
+    const character = createCharacter();
+    const otherCharacter = createCharacter();
+    const first = createDialogue(character.id);
+    const second = createDialogue(otherCharacter.id);
+
+    expect(
+      resolveDialogueAvatarUrl("default.png", character.id, [first, second], {
+        [first.id]: "first.png",
+      }),
+    ).toBe("first.png");
   });
 });

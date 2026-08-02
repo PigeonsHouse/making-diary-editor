@@ -125,6 +125,10 @@ function DiaryScene({
     frame >= introFrames && activeBlock
       ? getVisibleDialogues(activeBlock, blockLocalFrame, fps, characters, defaultEndHold)
       : [];
+  const startedDialogues =
+    frame >= introFrames && activeBlock
+      ? getStartedDialogues(activeBlock, blockLocalFrame, fps, characters, defaultEndHold)
+      : [];
 
   return (
     <AbsoluteFill>
@@ -137,7 +141,7 @@ function DiaryScene({
       <Avatars
         project={project}
         characters={characters}
-        activeDialogues={activeDialogues}
+        startedDialogues={startedDialogues}
         dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
       />
       {frame < centerEnd ? (
@@ -233,6 +237,19 @@ function getVisibleDialogues(
   const seconds = localFrame / fps;
   return calculateBlock(block, characters, defaultEndHold)
     .dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd)
+    .map((item) => item.dialogue);
+}
+
+function getStartedDialogues(
+  block: ContentBlock,
+  localFrame: number,
+  fps: number,
+  characters: Character[],
+  defaultEndHold?: number,
+) {
+  const seconds = localFrame / fps;
+  return calculateBlock(block, characters, defaultEndHold)
+    .dialogues.filter((item) => seconds >= item.start)
     .map((item) => item.dialogue);
 }
 

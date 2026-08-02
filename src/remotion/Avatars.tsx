@@ -9,12 +9,12 @@ import type { Character, Dialogue, ProjectDocument } from "@/domain/types";
 export function Avatars({
   project,
   characters,
-  activeDialogues,
+  startedDialogues,
   dialoguePsdPreviewUrls,
 }: {
   project: ProjectDocument;
   characters: Character[];
-  activeDialogues: Dialogue[];
+  startedDialogues: Dialogue[];
   dialoguePsdPreviewUrls?: Record<string, string>;
 }) {
   const selected = project.characterIds
@@ -38,7 +38,7 @@ export function Avatars({
         const avatarUrl = resolveDialogueAvatarUrl(
           character.avatar.previewUrl,
           character.id,
-          activeDialogues,
+          startedDialogues,
           dialoguePsdPreviewUrls,
         );
         if (!avatarUrl) return null;

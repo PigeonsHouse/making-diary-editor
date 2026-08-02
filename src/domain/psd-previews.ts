@@ -45,12 +45,12 @@ export function createDialoguePsdPreviewSpecs(
 export function resolveDialogueAvatarUrl(
   defaultUrl: string | null,
   characterId: string,
-  activeDialogues: Dialogue[],
+  startedDialogues: Dialogue[],
   previewUrls: Record<string, string> = {},
 ) {
-  for (let index = activeDialogues.length - 1; index >= 0; index--) {
-    const dialogue = activeDialogues[index];
-    if (dialogue.characterId === characterId && previewUrls[dialogue.id]) return previewUrls[dialogue.id];
+  for (let index = startedDialogues.length - 1; index >= 0; index -= 1) {
+    const dialogue = startedDialogues[index];
+    if (dialogue.characterId === characterId) return previewUrls[dialogue.id] ?? defaultUrl;
   }
   return defaultUrl;
 }
