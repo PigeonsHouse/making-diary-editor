@@ -1,7 +1,7 @@
-import {NextResponse} from "next/server";
-import {z} from "zod";
-import type {Character} from "@/domain/types";
-import {apiError} from "@/server/http";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import type { Character } from "@/domain/types";
+import { apiError } from "@/server/http";
 
 const inputSchema = z.object({
   memo: z.string().min(1),
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const input = inputSchema.parse(await request.json());
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({error: "GEMINI_API_KEYが設定されていません"}, {status: 503});
+      return NextResponse.json({ error: "GEMINI_API_KEYが設定されていません" }, { status: 503 });
     }
     const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
     const prompt = [
@@ -44,9 +44,9 @@ export async function POST(request: Request) {
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
-        headers: {"content-type": "application/json"},
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          contents: [{parts: [{text: prompt}]}],
+          contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
               items: {
                 type: "OBJECT",
                 properties: {
-                  characterId: {type: "STRING"},
-                  text: {type: "STRING"},
+                  characterId: { type: "STRING" },
+                  text: { type: "STRING" },
                 },
                 required: ["characterId", "text"],
               },

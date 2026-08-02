@@ -1,14 +1,14 @@
-import {mkdir} from "node:fs/promises";
-import {execFile} from "node:child_process";
+import { mkdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
 import path from "node:path";
-import {promisify} from "node:util";
-import {bundle} from "@remotion/bundler";
-import {renderMedia, selectComposition} from "@remotion/renderer";
-import {Worker} from "bullmq";
-import {eq} from "drizzle-orm";
-import {db} from "@/server/db";
-import {assets, characters, renderJobs} from "@/server/db/schema";
-import {redis} from "@/server/queue";
+import { promisify } from "node:util";
+import { bundle } from "@remotion/bundler";
+import { renderMedia, selectComposition } from "@remotion/renderer";
+import { Worker } from "bullmq";
+import { eq } from "drizzle-orm";
+import { db } from "@/server/db";
+import { assets, characters, renderJobs } from "@/server/db/schema";
+import { redis } from "@/server/queue";
 
 const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const rendersDir = path.join(dataDir, "renders");
@@ -35,7 +35,7 @@ const getServeUrl = () => {
 };
 
 async function main() {
-  await mkdir(rendersDir, {recursive: true});
+  await mkdir(rendersDir, { recursive: true });
 
   new Worker(
     "renders",
@@ -52,7 +52,7 @@ async function main() {
       try {
         await db
           .update(renderJobs)
-          .set({status: "rendering", updatedAt: new Date()})
+          .set({ status: "rendering", updatedAt: new Date() })
           .where(eq(renderJobs.id, renderJobId));
         const serveUrl = await getServeUrl();
         const composition = await selectComposition({
@@ -69,12 +69,12 @@ async function main() {
           outputLocation: outputPath,
           inputProps,
           browserExecutable: process.env.CHROMIUM_PATH,
-          onProgress: async ({progress}) => {
+          onProgress: async ({ progress }) => {
             const percent = Math.round(progress * 100);
             await queueJob.updateProgress(percent);
             await db
               .update(renderJobs)
-              .set({progress: percent, updatedAt: new Date()})
+              .set({ progress: percent, updatedAt: new Date() })
               .where(eq(renderJobs.id, renderJobId));
           },
         });
@@ -99,14 +99,14 @@ async function main() {
         throw error;
       }
     },
-    {connection: redis, concurrency: 1},
+    { connection: redis, concurrency: 1 },
   );
 
   console.log("Render worker started");
 
   const execFileAsync = promisify(execFile);
   const normalizedDir = path.join(dataDir, "normalized");
-  await mkdir(normalizedDir, {recursive: true});
+  await mkdir(normalizedDir, { recursive: true });
 
   new Worker(
     "assets",
@@ -147,7 +147,7 @@ async function main() {
               ]
             : ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-q:v", "2", output];
         await execFileAsync("ffmpeg", args);
-        const {stdout} = await execFileAsync("ffprobe", [
+        const { stdout } = await execFileAsync("ffprobe", [
           "-v",
           "error",
           "-show_entries",
@@ -176,7 +176,7 @@ async function main() {
         throw error;
       }
     },
-    {connection: redis, concurrency: 1},
+    { connection: redis, concurrency: 1 },
   );
 
   console.log("Asset worker started");

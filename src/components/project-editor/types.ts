@@ -1,4 +1,4 @@
-import type {Character, ProjectDocument} from "@/domain/types";
+import type { Character, ProjectDocument } from "@/domain/types";
 
 export type CharacterRow = {
   id: string;

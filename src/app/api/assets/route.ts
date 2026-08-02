@@ -1,11 +1,11 @@
-import {mkdir, writeFile} from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import {desc} from "drizzle-orm";
-import {NextResponse} from "next/server";
-import {db} from "@/server/db";
-import {assets} from "@/server/db/schema";
-import {apiError} from "@/server/http";
-import {assetQueue} from "@/server/queue";
+import { desc } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { db } from "@/server/db";
+import { assets } from "@/server/db/schema";
+import { apiError } from "@/server/http";
+import { assetQueue } from "@/server/queue";
 
 export async function GET() {
   return NextResponse.json(await db.select().from(assets).orderBy(desc(assets.createdAt)));
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) {
-      return NextResponse.json({error: "ファイルが必要です"}, {status: 400});
+      return NextResponse.json({ error: "ファイルが必要です" }, { status: 400 });
     }
     const kind = file.name.toLowerCase().endsWith(".psd")
       ? "psd"
@@ -25,10 +25,10 @@ export async function POST(request: Request) {
         : file.type.startsWith("video/")
           ? "video"
           : null;
-    if (!kind) return NextResponse.json({error: "画像、動画、PSDだけアップロードできます"}, {status: 415});
+    if (!kind) return NextResponse.json({ error: "画像、動画、PSDだけアップロードできます" }, { status: 415 });
     const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
     const uploadDir = path.join(dataDir, "uploads");
-    await mkdir(uploadDir, {recursive: true});
+    await mkdir(uploadDir, { recursive: true });
     const id = crypto.randomUUID();
     const extension = path
       .extname(file.name)
@@ -47,8 +47,8 @@ export async function POST(request: Request) {
         status: kind === "psd" ? "ready" : "processing",
       })
       .returning();
-    if (kind !== "psd") await assetQueue.add("normalize", {assetId: id}, {jobId: id, removeOnComplete: 100});
-    return NextResponse.json(asset, {status: 202});
+    if (kind !== "psd") await assetQueue.add("normalize", { assetId: id }, { jobId: id, removeOnComplete: 100 });
+    return NextResponse.json(asset, { status: 202 });
   } catch (error) {
     return apiError(error);
   }

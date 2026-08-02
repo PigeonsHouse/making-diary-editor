@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, type ReactNode} from "react";
-import type {TreeNode} from "./types";
+import { useState, type ReactNode } from "react";
+import type { TreeNode } from "./types";
 
 export function PathPicker({
   label,
@@ -83,7 +83,7 @@ function TreePicker({
   );
 }
 
-export function TreePreview({node}: {node: TreeNode}) {
+export function TreePreview({ node }: { node: TreeNode }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="psd-tree-node">

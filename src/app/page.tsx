@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import {useEffect, useState} from "react";
-import type {ProjectRecord} from "@/domain/types";
+import { useEffect, useState } from "react";
+import type { ProjectRecord } from "@/domain/types";
 
 const diaryPeriod = (project: ProjectRecord) => {
   const dates = project.document.diaries
@@ -30,8 +30,8 @@ export default function HomePage() {
   const create = async () => {
     const response = await fetch("/api/projects", {
       method: "POST",
-      headers: {"content-type": "application/json"},
-      body: JSON.stringify({name: "新しい製作日誌"}),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "新しい製作日誌" }),
     });
     if (!response.ok) return setError("プロジェクトを作成できませんでした");
     location.href = `/projects/${(await response.json()).id}`;

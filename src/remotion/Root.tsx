@@ -1,8 +1,8 @@
-import {Composition} from "remotion";
-import {createProject} from "@/domain/defaults";
-import {DiaryVideo, getVideoDuration} from "./DiaryVideo";
+import { Composition } from "remotion";
+import { createProject } from "@/domain/defaults";
+import { DiaryVideo, getVideoDuration } from "./DiaryVideo";
 
-const defaultProps = {project: createProject(), characters: []};
+const defaultProps = { project: createProject(), characters: [] };
 
 export function RemotionRoot() {
   return (
@@ -14,7 +14,7 @@ export function RemotionRoot() {
       fps={30}
       durationInFrames={30}
       defaultProps={defaultProps}
-      calculateMetadata={({props}) => ({
+      calculateMetadata={({ props }) => ({
         durationInFrames: getVideoDuration(props.project, props.characters),
       })}
     />

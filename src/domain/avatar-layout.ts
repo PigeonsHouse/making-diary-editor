@@ -9,11 +9,11 @@ export type AvatarPosition = {
 export const isAvatarFlipped = (index: number, override?: boolean) => override ?? index % 2 === 1;
 
 export function calculateAvatarPositions(
-  characters: Array<{id: string; edgeOffsetXPx: number; peekYPx: number}>,
-  overrides: Record<string, {edgeOffsetXPx?: number; peekYPx?: number}>,
+  characters: Array<{ id: string; edgeOffsetXPx: number; peekYPx: number }>,
+  overrides: Record<string, { edgeOffsetXPx?: number; peekYPx?: number }>,
   panelTop: number,
 ): AvatarPosition[] {
-  const sideTops = {right: panelTop, left: panelTop};
+  const sideTops = { right: panelTop, left: panelTop };
 
   return characters.map((character, index) => {
     const side = index % 2 === 0 ? "right" : "left";
@@ -23,6 +23,6 @@ export function calculateAvatarPositions(
     const edgeOffsetXPx = override?.edgeOffsetXPx ?? character.edgeOffsetXPx;
     const top = sideTops[side] - peekYPx;
     sideTops[side] = top;
-    return {id: character.id, side, level, top, edgeOffsetXPx};
+    return { id: character.id, side, level, top, edgeOffsetXPx };
   });
 }

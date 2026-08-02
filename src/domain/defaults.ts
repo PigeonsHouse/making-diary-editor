@@ -1,4 +1,4 @@
-import type {Character, ContentBlock, Dialogue, DiaryEntry, ProjectDocument} from "./types";
+import type { Character, ContentBlock, Dialogue, DiaryEntry, ProjectDocument } from "./types";
 
 export const EDITOR_CONSTANTS = {
   fps: 30,
@@ -61,10 +61,10 @@ export const createCharacter = (): Character => ({
   color: "#5b8def",
   personality: "",
   defaultPauseBeforeSeconds: 0.25,
-  voice: {styleName: "ノーマル", speed: 1, pitch: 0, intonation: 1, volume: 1},
+  voice: { styleName: "ノーマル", speed: 1, pitch: 0, intonation: 1, volume: 1 },
   psdAssetId: null,
   psdDefaults: {},
   psdFilterOrder: [],
   psdFilters: {},
-  avatar: {scale: 1, edgeOffsetXPx: 0, peekYPx: 180, previewUrl: null},
+  avatar: { scale: 1, edgeOffsetXPx: 0, peekYPx: 180, previewUrl: null },
 });

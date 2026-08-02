@@ -1,20 +1,20 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from "react";
-import {createBlock, createDialogue, createDiary} from "@/domain/defaults";
-import {validateProject} from "@/domain/timeline";
-import type {Character, ProjectDocument, ProjectRecord} from "@/domain/types";
-import {VideoPreview} from "./VideoPreview";
-import {AssetLibrary} from "./project-editor/AssetLibrary";
-import {CastEditor} from "./project-editor/CastEditor";
-import {DiaryPanel} from "./project-editor/DiaryPanel";
-import {ProjectTabs} from "./project-editor/ProjectTabs";
-import {WishEditor} from "./project-editor/WishEditor";
-import {cleanLegacyVoiceOverrides} from "./project-editor/project-document";
-import {getPreviewProject} from "./project-editor/preview-project";
-import type {AssetRow, CharacterRow, EditorTab} from "./project-editor/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createBlock, createDialogue, createDiary } from "@/domain/defaults";
+import { validateProject } from "@/domain/timeline";
+import type { Character, ProjectDocument, ProjectRecord } from "@/domain/types";
+import { VideoPreview } from "./VideoPreview";
+import { AssetLibrary } from "./project-editor/AssetLibrary";
+import { CastEditor } from "./project-editor/CastEditor";
+import { DiaryPanel } from "./project-editor/DiaryPanel";
+import { ProjectTabs } from "./project-editor/ProjectTabs";
+import { WishEditor } from "./project-editor/WishEditor";
+import { cleanLegacyVoiceOverrides } from "./project-editor/project-document";
+import { getPreviewProject } from "./project-editor/preview-project";
+import type { AssetRow, CharacterRow, EditorTab } from "./project-editor/types";
 
-export function ProjectEditor({projectId}: {projectId: string}) {
+export function ProjectEditor({ projectId }: { projectId: string }) {
   const [record, setRecord] = useState<ProjectRecord | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [assets, setAssets] = useState<AssetRow[]>([]);
@@ -32,7 +32,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
     ])
       .then(([project, characterRows, assetRows]: [ProjectRecord, CharacterRow[], AssetRow[]]) => {
         const cleanedLegacyOverrides = cleanLegacyVoiceOverrides(project.document);
-        setRecord({...project, document: cleanedLegacyOverrides.document});
+        setRecord({ ...project, document: cleanedLegacyOverrides.document });
         setCharacters(characterRows.map((row) => row.data));
         setAssets(assetRows);
         setSaveState(cleanedLegacyOverrides.changed ? "未保存" : "保存済み");
@@ -46,7 +46,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
       if (!current) return current;
       const document = structuredClone(current.document);
       recipe(document);
-      return {...current, document};
+      return { ...current, document };
     });
     setSaveState("未保存");
   }, []);
@@ -61,8 +61,8 @@ export function ProjectEditor({projectId}: {projectId: string}) {
       setSaveState("保存中…");
       const response = await fetch(`/api/projects/${projectId}`, {
         method: "PATCH",
-        headers: {"content-type": "application/json"},
-        body: JSON.stringify({revision: record.revision, document: record.document}),
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ revision: record.revision, document: record.document }),
       });
       if (response.status === 409) return setSaveState("競合：再読み込みしてください");
       if (!response.ok) return setSaveState("保存失敗");
@@ -76,7 +76,7 @@ export function ProjectEditor({projectId}: {projectId: string}) {
   useEffect(() => {
     tabsRef.current
       ?.querySelector<HTMLElement>('[aria-selected="true"]')
-      ?.scrollIntoView({block: "nearest", inline: "nearest"});
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [activeTab, record?.document.diaries.length]);
 
   if (!record) {
@@ -126,8 +126,8 @@ export function ProjectEditor({projectId}: {projectId: string}) {
     setRenderState("キューへ追加中…");
     const response = await fetch("/api/render", {
       method: "POST",
-      headers: {"content-type": "application/json"},
-      body: JSON.stringify({projectId}),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ projectId }),
     });
     const body = await response.json();
     if (!response.ok) return setRenderState(body.error ?? "開始できませんでした");
@@ -148,22 +148,22 @@ export function ProjectEditor({projectId}: {projectId: string}) {
   const generateDialogues = async (diaryId: string, memo: string) => {
     const response = await fetch("/api/gemini", {
       method: "POST",
-      headers: {"content-type": "application/json"},
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         memo,
         characters: project.characterIds
           .map((id) => characters.find((item) => item.id === id))
           .filter(Boolean)
-          .map((item) => ({id: item!.id, name: item!.name, personality: item!.personality})),
+          .map((item) => ({ id: item!.id, name: item!.name, personality: item!.personality })),
       }),
     });
     if (!response.ok) throw new Error((await response.json()).error);
-    const generated: Array<{characterId: string; text: string}> = await response.json();
+    const generated: Array<{ characterId: string; text: string }> = await response.json();
     update((draft) => {
       const diary = draft.diaries.find((item) => item.id === diaryId)!;
       const block = createBlock();
       block.durationSeconds = null;
-      block.dialogues = generated.map((item) => ({...createDialogue(item.characterId), text: item.text}));
+      block.dialogues = generated.map((item) => ({ ...createDialogue(item.characterId), text: item.text }));
       diary.blocks.push(block);
     });
   };

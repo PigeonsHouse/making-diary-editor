@@ -1,14 +1,14 @@
-import {desc} from "drizzle-orm";
-import {NextResponse} from "next/server";
-import {createProject} from "@/domain/defaults";
-import {projectDocumentSchema} from "@/domain/types";
-import {db} from "@/server/db";
-import {projects} from "@/server/db/schema";
-import {apiError} from "@/server/http";
+import { desc } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { createProject } from "@/domain/defaults";
+import { projectDocumentSchema } from "@/domain/types";
+import { db } from "@/server/db";
+import { projects } from "@/server/db/schema";
+import { apiError } from "@/server/http";
 
 export async function GET() {
   const rows = await db.select().from(projects).orderBy(desc(projects.updatedAt));
-  return NextResponse.json(rows.map((row) => ({...row, document: projectDocumentSchema.parse(row.document)})));
+  return NextResponse.json(rows.map((row) => ({ ...row, document: projectDocumentSchema.parse(row.document) })));
 }
 
 export async function POST(request: Request) {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         document,
       })
       .returning();
-    return NextResponse.json(row, {status: 201});
+    return NextResponse.json(row, { status: 201 });
   } catch (error) {
     return apiError(error);
   }

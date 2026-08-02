@@ -1,5 +1,5 @@
-import {EDITOR_CONSTANTS} from "./defaults";
-import type {Character, ContentBlock, Dialogue, ProjectDocument} from "./types";
+import { EDITOR_CONSTANTS } from "./defaults";
+import type { Character, ContentBlock, Dialogue, ProjectDocument } from "./types";
 
 export type TimedDialogue = {
   dialogue: Dialogue;
@@ -24,13 +24,13 @@ export function calculateBlock(
   block: ContentBlock,
   characters: Character[],
   defaultEndHold: number = EDITOR_CONSTANTS.defaultBlockEndHoldSeconds,
-): {dialogues: TimedDialogue[]; duration: number; issues: TimelineIssue[]} {
+): { dialogues: TimedDialogue[]; duration: number; issues: TimelineIssue[] } {
   if (block.dialogues.length === 0) {
     const duration = block.durationSeconds ?? 0;
     return {
       dialogues: [],
       duration,
-      issues: duration > 0 ? [] : [{path: block.id, message: "無言ブロックには表示秒数が必要です"}],
+      issues: duration > 0 ? [] : [{ path: block.id, message: "無言ブロックには表示秒数が必要です" }],
     };
   }
 
@@ -42,17 +42,17 @@ export function calculateBlock(
   block.dialogues.forEach((dialogue, index) => {
     const character = byId.get(dialogue.characterId);
     if (!character) {
-      issues.push({path: dialogue.id, message: "参照キャラクターが存在しません"});
+      issues.push({ path: dialogue.id, message: "参照キャラクターが存在しません" });
     }
     if (!dialogue.audio.durationSeconds) {
-      issues.push({path: dialogue.id, message: "音声が生成されていません"});
+      issues.push({ path: dialogue.id, message: "音声が生成されていません" });
     }
 
     const pause = dialogue.pauseBeforeSeconds ?? (index === 0 ? 0 : (character?.defaultPauseBeforeSeconds ?? 0));
     const previous = timed[index - 1];
     const start = previous ? previous.audioEnd + pause : pause;
     if (start < 0 || (previous && start < previous.start)) {
-      issues.push({path: dialogue.id, message: "前のセリフより前に発話を開始できません"});
+      issues.push({ path: dialogue.id, message: "前のセリフより前に発話を開始できません" });
     }
     if (previous && start >= previous.audioEnd) group += 1;
 
@@ -85,11 +85,11 @@ export function validateProject(document: ProjectDocument, characters: Character
   const issues: TimelineIssue[] = [];
   const known = new Set(characters.map((character) => character.id));
   for (const id of document.characterIds) {
-    if (!known.has(id)) issues.push({path: id, message: "登場キャラクターが削除されています"});
+    if (!known.has(id)) issues.push({ path: id, message: "登場キャラクターが削除されています" });
   }
   const dates = new Set<string>();
   for (const diary of document.diaries) {
-    if (dates.has(diary.date)) issues.push({path: diary.id, message: "日誌の日付が重複しています"});
+    if (dates.has(diary.date)) issues.push({ path: diary.id, message: "日誌の日付が重複しています" });
     dates.add(diary.date);
     for (const block of diary.blocks) issues.push(...calculateBlock(block, characters).issues);
   }

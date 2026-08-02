@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {dialogueSchema} from "./types";
+import { describe, expect, it } from "vitest";
+import { dialogueSchema } from "./types";
 
 describe("dialogueSchema", () => {
   it("未指定の音声上書きへキャラクター既定相当の値を補完しない", () => {

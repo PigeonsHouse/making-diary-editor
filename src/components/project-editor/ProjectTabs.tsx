@@ -1,8 +1,8 @@
 "use client";
 
-import type {RefObject} from "react";
-import type {DiaryEntry} from "@/domain/types";
-import type {EditorTab} from "./types";
+import type { RefObject } from "react";
+import type { DiaryEntry } from "@/domain/types";
+import type { EditorTab } from "./types";
 
 type Props = {
   activeTab: EditorTab;
@@ -13,7 +13,7 @@ type Props = {
   onAddDiary: () => void;
 };
 
-export function ProjectTabs({activeTab, diaries, tabsRef, onSelect, onSortDiaries, onAddDiary}: Props) {
+export function ProjectTabs({ activeTab, diaries, tabsRef, onSelect, onSortDiaries, onAddDiary }: Props) {
   return (
     <div className="editor-tabs-toolbar">
       <div ref={tabsRef} className="editor-tabs" role="tablist" aria-label="プロジェクトの編集項目">

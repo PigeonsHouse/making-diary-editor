@@ -1,13 +1,13 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
-import {createCharacter, EDITOR_CONSTANTS} from "@/domain/defaults";
-import type {Character} from "@/domain/types";
-import {PsdSettings} from "@/components/PsdSettings";
-import {VoiceSettingsSliders} from "@/components/VoiceSettingsSliders";
+import { useEffect, useRef, useState } from "react";
+import { createCharacter, EDITOR_CONSTANTS } from "@/domain/defaults";
+import type { Character } from "@/domain/types";
+import { PsdSettings } from "@/components/PsdSettings";
+import { VoiceSettingsSliders } from "@/components/VoiceSettingsSliders";
 
-type Row = {id: string; revision: number; data: Character};
-type VoicevoxSpeaker = {name: string; styles: Array<{name: string; id: number}>};
+type Row = { id: string; revision: number; data: Character };
+type VoicevoxSpeaker = { name: string; styles: Array<{ name: string; id: number }> };
 
 export default function CharactersPage() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -38,8 +38,8 @@ export default function CharactersPage() {
       setStatus("保存中…");
       const response = await fetch(`/api/characters/${row.id}`, {
         method: "PATCH",
-        headers: {"content-type": "application/json"},
-        body: JSON.stringify({revision: row.revision, data: row.data}),
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ revision: row.revision, data: row.data }),
       });
       if (!response.ok) return setStatus("保存失敗");
       const updated = await response.json();
@@ -55,7 +55,7 @@ export default function CharactersPage() {
         if (index !== selected) return item;
         const data = structuredClone(item.data);
         recipe(data);
-        return {...item, data};
+        return { ...item, data };
       }),
     );
     setStatus("未保存");
@@ -63,7 +63,7 @@ export default function CharactersPage() {
   const add = async () => {
     const response = await fetch("/api/characters", {
       method: "POST",
-      headers: {"content-type": "application/json"},
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(createCharacter()),
     });
     const created = await response.json();
@@ -93,7 +93,7 @@ export default function CharactersPage() {
                 setSelected(index);
               }}
             >
-              <span style={{background: item.data.color}} />
+              <span style={{ background: item.data.color }} />
               {item.data.name}
             </button>
           ))}
@@ -241,8 +241,8 @@ export default function CharactersPage() {
   );
 }
 
-function AvatarPositionPreview({character}: {character: Character}) {
-  const {edgeOffsetXPx, peekYPx, scale, previewUrl} = character.avatar;
+function AvatarPositionPreview({ character }: { character: Character }) {
+  const { edgeOffsetXPx, peekYPx, scale, previewUrl } = character.avatar;
   const right = `${(edgeOffsetXPx / EDITOR_CONSTANTS.width) * 100}%`;
   const top = `${((EDITOR_CONSTANTS.height * 0.77 - peekYPx) / EDITOR_CONSTANTS.height) * 100}%`;
 
@@ -257,7 +257,7 @@ function AvatarPositionPreview({character}: {character: Character}) {
           <img
             src={previewUrl}
             alt={`${character.name}の配置プレビュー`}
-            style={{right, top, height: `${70 * scale}%`}}
+            style={{ right, top, height: `${70 * scale}%` }}
           />
         ) : (
           <div className="avatar-position-empty">PSDプレビューを生成すると表示されます</div>

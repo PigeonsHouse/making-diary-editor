@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {createCharacter, createDialogue} from "./defaults";
-import {calculateBlock, dialogueAudioStartFrame} from "./timeline";
+import { describe, expect, it } from "vitest";
+import { createCharacter, createDialogue } from "./defaults";
+import { calculateBlock, dialogueAudioStartFrame } from "./timeline";
 
 const ready = (text: string, duration: number, pause: number | null) => ({
   ...createDialogue(character.id),

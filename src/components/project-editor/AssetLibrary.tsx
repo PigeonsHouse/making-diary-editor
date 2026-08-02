@@ -1,9 +1,9 @@
 "use client";
 
-import {useState} from "react";
-import type {AssetRow} from "./types";
+import { useState } from "react";
+import type { AssetRow } from "./types";
 
-export function AssetLibrary({assets, onChanged}: {assets: AssetRow[]; onChanged: (assets: AssetRow[]) => void}) {
+export function AssetLibrary({ assets, onChanged }: { assets: AssetRow[]; onChanged: (assets: AssetRow[]) => void }) {
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [state, setState] = useState("");
@@ -13,7 +13,7 @@ export function AssetLibrary({assets, onChanged}: {assets: AssetRow[]; onChanged
     setUploading(true);
     const form = new FormData();
     form.set("file", file);
-    const response = await fetch("/api/assets", {method: "POST", body: form});
+    const response = await fetch("/api/assets", { method: "POST", body: form });
     if (response.ok) {
       const refresh = async () => {
         const next: AssetRow[] = await fetch("/api/assets").then((item) => item.json());
@@ -33,7 +33,7 @@ export function AssetLibrary({assets, onChanged}: {assets: AssetRow[]; onChanged
     if (!window.confirm(`「${asset.originalName}」を削除します。元に戻せません。続行しますか？`)) return;
     setDeletingId(asset.id);
     setState("");
-    const response = await fetch(`/api/assets/${asset.id}`, {method: "DELETE"});
+    const response = await fetch(`/api/assets/${asset.id}`, { method: "DELETE" });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) setState(body.error ?? "素材を削除できませんでした");
     else onChanged(assets.filter((item) => item.id !== asset.id));
@@ -98,6 +98,6 @@ export function AssetLibrary({assets, onChanged}: {assets: AssetRow[]; onChanged
   );
 }
 
-const assetKindLabel = (kind: AssetRow["kind"]) => ({image: "画像", video: "動画", psd: "PSD"})[kind];
+const assetKindLabel = (kind: AssetRow["kind"]) => ({ image: "画像", video: "動画", psd: "PSD" })[kind];
 const assetStatusLabel = (status: string) =>
-  ({ready: "利用可能", processing: "変換中", error: "エラー"})[status] ?? status;
+  ({ ready: "利用可能", processing: "変換中", error: "エラー" })[status] ?? status;

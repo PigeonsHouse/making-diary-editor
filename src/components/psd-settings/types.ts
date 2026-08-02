@@ -1,4 +1,4 @@
-import type {Character} from "@/domain/types";
+import type { Character } from "@/domain/types";
 
 export type TreeNode = {
   path: string;

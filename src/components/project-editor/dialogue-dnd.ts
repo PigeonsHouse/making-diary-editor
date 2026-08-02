@@ -1,4 +1,4 @@
-import type {DialogueDragLocation} from "./types";
+import type { DialogueDragLocation } from "./types";
 
 export const DIALOGUE_DRAG_TYPE = "application/x-making-diary-dialogue";
 export const WISH_LIST_DIALOGUE_SCOPE = "__wish_list__";

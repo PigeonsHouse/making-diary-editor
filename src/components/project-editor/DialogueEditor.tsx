@@ -1,11 +1,11 @@
 "use client";
 
-import {useEffect, useRef, useState, type CSSProperties} from "react";
-import type {Character, Dialogue} from "@/domain/types";
-import {DialoguePsdOverrides} from "./DialoguePsdOverrides";
-import {DialogueVoiceOverrides} from "./DialogueVoiceOverrides";
-import {DIALOGUE_DRAG_TYPE, hasDialogueDragData, readDialogueDragData} from "./dialogue-dnd";
-import type {DialogueDragLocation} from "./types";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import type { Character, Dialogue } from "@/domain/types";
+import { DialoguePsdOverrides } from "./DialoguePsdOverrides";
+import { DialogueVoiceOverrides } from "./DialogueVoiceOverrides";
+import { DIALOGUE_DRAG_TYPE, hasDialogueDragData, readDialogueDragData } from "./dialogue-dnd";
+import type { DialogueDragLocation } from "./types";
 
 type Props = {
   dialogue: Dialogue;
@@ -35,7 +35,7 @@ export function DialogueEditor({
 
   useEffect(() => {
     if (!character) return;
-    const voice = {...character.voice, ...dialogue.voiceOverrides};
+    const voice = { ...character.voice, ...dialogue.voiceOverrides };
     const input = {
       ...voice,
       voicevoxName: character.voicevoxName,
@@ -49,7 +49,7 @@ export function DialogueEditor({
       try {
         const response = await fetch("/api/voice", {
           method: "POST",
-          headers: {"content-type": "application/json"},
+          headers: { "content-type": "application/json" },
           body: JSON.stringify(input),
         });
         if (!response.ok) throw new Error((await response.json()).error);
@@ -75,7 +75,7 @@ export function DialogueEditor({
               };
             });
           },
-          {once: true},
+          { once: true },
         );
         audio.addEventListener(
           "error",
@@ -86,7 +86,7 @@ export function DialogueEditor({
               draft.audio.error = "生成音声を読み込めませんでした";
             });
           },
-          {once: true},
+          { once: true },
         );
       } catch (error) {
         if (cancelled) return;
@@ -123,7 +123,7 @@ export function DialogueEditor({
     try {
       const response = await fetch("/api/voice/kana", {
         method: "POST",
-        headers: {"content-type": "application/json"},
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           text: dialogue.text,
           voicevoxName: character.voicevoxName,
@@ -145,7 +145,7 @@ export function DialogueEditor({
   return (
     <div
       className="dialogue-row"
-      style={{"--speaker": character?.color ?? "#64748b"} as CSSProperties}
+      style={{ "--speaker": character?.color ?? "#64748b" } as CSSProperties}
       onDragOver={(event) => {
         if (dragLocation && hasDialogueDragData(event.dataTransfer)) event.preventDefault();
       }}

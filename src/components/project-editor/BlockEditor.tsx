@@ -1,10 +1,10 @@
 "use client";
 
-import {createDialogue} from "@/domain/defaults";
-import type {Character, ContentBlock} from "@/domain/types";
-import {DialogueEditor} from "./DialogueEditor";
-import {hasDialogueDragData, readDialogueDragData} from "./dialogue-dnd";
-import type {AssetRow} from "./types";
+import { createDialogue } from "@/domain/defaults";
+import type { Character, ContentBlock } from "@/domain/types";
+import { DialogueEditor } from "./DialogueEditor";
+import { hasDialogueDragData, readDialogueDragData } from "./dialogue-dnd";
+import type { AssetRow } from "./types";
 
 type Props = {
   block: ContentBlock;
@@ -57,7 +57,7 @@ export function BlockEditor({
                     assetId: asset.id,
                     type: asset.kind as "image" | "video",
                     url: `/api/files/assets/${asset.id}`,
-                    trim: {top: 0, right: 0, bottom: 0, left: 0},
+                    trim: { top: 0, right: 0, bottom: 0, left: 0 },
                     startSeconds: 0,
                     endSeconds: null,
                     volume: 1,
@@ -143,7 +143,7 @@ export function BlockEditor({
           dialogue={dialogue}
           index={index}
           characters={cast}
-          dragLocation={{diaryId, blockIndex, dialogueIndex: index}}
+          dragLocation={{ diaryId, blockIndex, dialogueIndex: index }}
           onDropDialogue={(from, toDialogueIndex) =>
             moveDialogue(diaryId, from.blockIndex, from.dialogueIndex, blockIndex, toDialogueIndex)
           }

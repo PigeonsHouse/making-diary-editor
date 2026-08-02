@@ -1,8 +1,8 @@
 "use client";
 
-import {useState} from "react";
+import { useState } from "react";
 
-export function GeminiButton({onGenerate}: {onGenerate: (memo: string) => Promise<void>}) {
+export function GeminiButton({ onGenerate }: { onGenerate: (memo: string) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [memo, setMemo] = useState("");
   const [state, setState] = useState("");

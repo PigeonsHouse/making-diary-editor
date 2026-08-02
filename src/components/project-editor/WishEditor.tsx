@@ -1,10 +1,10 @@
 "use client";
 
-import {createDialogue} from "@/domain/defaults";
-import type {Character, ProjectDocument} from "@/domain/types";
-import {DialogueEditor} from "./DialogueEditor";
-import {WISH_LIST_DIALOGUE_SCOPE} from "./dialogue-dnd";
-import type {UpdateProject} from "./types";
+import { createDialogue } from "@/domain/defaults";
+import type { Character, ProjectDocument } from "@/domain/types";
+import { DialogueEditor } from "./DialogueEditor";
+import { WISH_LIST_DIALOGUE_SCOPE } from "./dialogue-dnd";
+import type { UpdateProject } from "./types";
 
 export function WishEditor({
   project,
@@ -21,7 +21,7 @@ export function WishEditor({
         className="notebook-add"
         onClick={() =>
           update((draft) => {
-            draft.wishList = {markdown: "- 作りたいもの", dialogues: [], durationSeconds: null, endHoldSeconds: null};
+            draft.wishList = { markdown: "- 作りたいもの", dialogues: [], durationSeconds: null, endHoldSeconds: null };
           })
         }
       >
@@ -68,7 +68,7 @@ export function WishEditor({
             dialogue={dialogue}
             index={index}
             characters={cast}
-            dragLocation={{diaryId: WISH_LIST_DIALOGUE_SCOPE, blockIndex: 0, dialogueIndex: index}}
+            dragLocation={{ diaryId: WISH_LIST_DIALOGUE_SCOPE, blockIndex: 0, dialogueIndex: index }}
             onDropDialogue={(from, toDialogueIndex) =>
               update((draft) => {
                 const dialogues = draft.wishList!.dialogues;

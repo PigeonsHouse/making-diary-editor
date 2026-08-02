@@ -10,11 +10,11 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import {calculateAvatarPositions, isAvatarFlipped} from "@/domain/avatar-layout";
-import {EDITOR_CONSTANTS} from "@/domain/defaults";
-import {calculateBlock, dialogueAudioStartFrame} from "@/domain/timeline";
-import type {Character, ContentBlock, DiaryEntry, ProjectDocument} from "@/domain/types";
-import {WishMarkdown} from "./WishMarkdown";
+import { calculateAvatarPositions, isAvatarFlipped } from "@/domain/avatar-layout";
+import { EDITOR_CONSTANTS } from "@/domain/defaults";
+import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
+import type { Character, ContentBlock, DiaryEntry, ProjectDocument } from "@/domain/types";
+import { WishMarkdown } from "./WishMarkdown";
 
 type Props = {
   project: ProjectDocument;
@@ -44,8 +44,8 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
   return Math.max(fps, secondsToFrames(seconds, fps));
 }
 
-export function DiaryVideo({project, characters, defaultEndHold}: Props) {
-  const {fps} = useVideoConfig();
+export function DiaryVideo({ project, characters, defaultEndHold }: Props) {
+  const { fps } = useVideoConfig();
   let cursor = 0;
   const sequences: React.ReactNode[] = [];
 
@@ -83,7 +83,7 @@ export function DiaryVideo({project, characters, defaultEndHold}: Props) {
     cursor += duration;
   });
 
-  return <AbsoluteFill style={{background: "#f4f6f8"}}>{sequences}</AbsoluteFill>;
+  return <AbsoluteFill style={{ background: "#f4f6f8" }}>{sequences}</AbsoluteFill>;
 }
 
 function GridBackground() {
@@ -99,7 +99,7 @@ function GridBackground() {
   );
 }
 
-function AssetBackground({block}: {block?: ContentBlock}) {
+function AssetBackground({ block }: { block?: ContentBlock }) {
   const asset = block?.asset;
   if (!asset) return <GridBackground />;
   const inset = EDITOR_CONSTANTS.mediaMarginPx;
@@ -126,9 +126,9 @@ function AssetBackground({block}: {block?: ContentBlock}) {
   );
 }
 
-function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary: DiaryEntry}) {
+function DiaryScene({ project, diary, characters, defaultEndHold }: Props & { diary: DiaryEntry }) {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const { fps } = useVideoConfig();
   const introFrames = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds, fps);
   let blockCursor = introFrames;
   let activeBlock = diary.blocks[0];
@@ -145,7 +145,7 @@ function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary
   const centerEnd = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds, fps);
   const fade =
     frame < introFrames
-      ? interpolate(frame, [centerEnd, introFrames], [0, 1], {extrapolateLeft: "clamp", extrapolateRight: "clamp"})
+      ? interpolate(frame, [centerEnd, introFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
       : 1;
 
   return (
@@ -156,13 +156,13 @@ function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary
         <div className="video-date-center">{formatDate(diary.date)}</div>
       ) : (
         <>
-          <div className="video-date-corner" style={{opacity: fade}}>
+          <div className="video-date-corner" style={{ opacity: fade }}>
             {formatDate(diary.date)}
           </div>
-          <div className="video-subtitle-corner" style={{opacity: fade}}>
+          <div className="video-subtitle-corner" style={{ opacity: fade }}>
             {diary.subtitle}
           </div>
-          <div className="video-dialogue-panel" style={{opacity: fade}} />
+          <div className="video-dialogue-panel" style={{ opacity: fade }} />
         </>
       )}
       {frame >= introFrames && activeBlock ? (
@@ -178,7 +178,7 @@ function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary
   );
 }
 
-function Avatars({project, characters}: Props) {
+function Avatars({ project, characters }: Props) {
   const selected = project.characterIds
     .map((id) => characters.find((character) => character.id === id))
     .filter(Boolean) as Character[];
@@ -194,7 +194,7 @@ function Avatars({project, characters}: Props) {
   return (
     <>
       {selected.map((character, index) => {
-        const {side, level, top, edgeOffsetXPx} = positions[index];
+        const { side, level, top, edgeOffsetXPx } = positions[index];
         const flipped = isAvatarFlipped(index, project.characterAvatarOverrides[character.id]?.flipHorizontal);
         if (!character.avatar.previewUrl) return null;
         return (
@@ -229,7 +229,7 @@ function DialogueLayer({
   characters: Character[];
   defaultEndHold?: number;
 }) {
-  const {fps} = useVideoConfig();
+  const { fps } = useVideoConfig();
   const seconds = localFrame / fps;
   const timing = calculateBlock(block, characters, defaultEndHold);
   const visible = timing.dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd);
@@ -253,7 +253,7 @@ function DialogueLayer({
             <div
               key={item.dialogue.id}
               className="video-dialogue"
-              style={{WebkitTextStroke: `5px ${character?.color ?? "#64748b"}`, zIndex: index}}
+              style={{ WebkitTextStroke: `5px ${character?.color ?? "#64748b"}`, zIndex: index }}
             >
               {item.dialogue.text}
             </div>
@@ -264,7 +264,7 @@ function DialogueLayer({
   );
 }
 
-function WishScene({project, characters, block}: Props & {block: ContentBlock}) {
+function WishScene({ project, characters, block }: Props & { block: ContentBlock }) {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill className="video-notebook">

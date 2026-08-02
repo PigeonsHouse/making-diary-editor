@@ -1,8 +1,8 @@
 "use client";
 
-import {useState} from "react";
-import type {Character, Dialogue} from "@/domain/types";
-import {VoiceSettingsSliders} from "../VoiceSettingsSliders";
+import { useState } from "react";
+import type { Character, Dialogue } from "@/domain/types";
+import { VoiceSettingsSliders } from "../VoiceSettingsSliders";
 
 type Props = {
   character: Character;
@@ -10,7 +10,7 @@ type Props = {
   updateDialogue: (recipe: (draft: Dialogue) => void) => void;
 };
 
-export function DialogueVoiceOverrides({character, dialogue, updateDialogue}: Props) {
+export function DialogueVoiceOverrides({ character, dialogue, updateDialogue }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <details className="dialogue-voice-options" open={isOpen} onToggle={(event) => setIsOpen(event.currentTarget.open)}>

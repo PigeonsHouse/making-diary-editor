@@ -1,5 +1,5 @@
-import type {Character} from "@/domain/types";
-import type {PsdFilter, TreeNode} from "./types";
+import type { Character } from "@/domain/types";
+import type { PsdFilter, TreeNode } from "./types";
 
 export function collectDirectLayers(nodes: TreeNode[], selectedFolders: Set<string>): TreeNode[] {
   const result: TreeNode[] = [];

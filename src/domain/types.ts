@@ -1,4 +1,4 @@
-import {z} from "zod";
+import { z } from "zod";
 
 export const voiceSettingsSchema = z.object({
   styleName: z.string().min(1).default("ノーマル"),

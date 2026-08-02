@@ -1,4 +1,4 @@
-import type {ProjectDocument} from "@/domain/types";
+import type { ProjectDocument } from "@/domain/types";
 
 export function cleanLegacyVoiceOverrides(document: ProjectDocument) {
   const cleaned = structuredClone(document);
@@ -22,5 +22,5 @@ export function cleanLegacyVoiceOverrides(document: ProjectDocument) {
     changed = true;
   }
 
-  return {document: cleaned, changed};
+  return { document: cleaned, changed };
 }

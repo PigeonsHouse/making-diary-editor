@@ -1,11 +1,11 @@
 "use client";
 
-import {createBlock} from "@/domain/defaults";
-import type {Character, DiaryEntry, ProjectDocument} from "@/domain/types";
-import {AssetLibrary} from "./AssetLibrary";
-import {BlockEditor} from "./BlockEditor";
-import {GeminiButton} from "./GeminiButton";
-import type {AssetRow, UpdateProject} from "./types";
+import { createBlock } from "@/domain/defaults";
+import type { Character, DiaryEntry, ProjectDocument } from "@/domain/types";
+import { AssetLibrary } from "./AssetLibrary";
+import { BlockEditor } from "./BlockEditor";
+import { GeminiButton } from "./GeminiButton";
+import type { AssetRow, UpdateProject } from "./types";
 
 type Props = {
   diary: DiaryEntry;

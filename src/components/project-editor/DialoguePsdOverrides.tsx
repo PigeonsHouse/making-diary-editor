@@ -1,7 +1,7 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import type {Character, Dialogue} from "@/domain/types";
+import { useEffect, useState } from "react";
+import type { Character, Dialogue } from "@/domain/types";
 
 type Props = {
   character: Character;
@@ -9,12 +9,12 @@ type Props = {
   updateDialogue: (recipe: (draft: Dialogue) => void) => void;
 };
 
-export function DialoguePsdOverrides({character, dialogue, updateDialogue}: Props) {
+export function DialoguePsdOverrides({ character, dialogue, updateDialogue }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(character.avatar.previewUrl);
   const [previewState, setPreviewState] = useState("");
-  const selections = {...character.psdDefaults, ...dialogue.psdOverrides};
-  const previewSignature = JSON.stringify({filters: character.psdFilters, selections});
+  const selections = { ...character.psdDefaults, ...dialogue.psdOverrides };
+  const previewSignature = JSON.stringify({ filters: character.psdFilters, selections });
 
   useEffect(() => {
     if (!isOpen || !character.psdAssetId) return;
@@ -24,7 +24,7 @@ export function DialoguePsdOverrides({character, dialogue, updateDialogue}: Prop
       try {
         const response = await fetch(`/api/psd/${character.psdAssetId}`, {
           method: "POST",
-          headers: {"content-type": "application/json"},
+          headers: { "content-type": "application/json" },
           body: previewSignature,
           signal: controller.signal,
         });

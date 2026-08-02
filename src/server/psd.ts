@@ -1,8 +1,8 @@
-import {createHash} from "node:crypto";
-import {mkdir, readFile, writeFile} from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import {initializeCanvas, readPsd, type Layer} from "ag-psd";
-import {PNG} from "pngjs";
+import { initializeCanvas, readPsd, type Layer } from "ag-psd";
+import { PNG } from "pngjs";
 
 const PSD_RENDER_VERSION = "multiply-v1";
 
@@ -30,7 +30,7 @@ export type PsdFilters = Record<
   {
     targets: string[];
     choiceOrder?: string[];
-    choices: Record<string, {show: string[]; hide?: string[]}>;
+    choices: Record<string, { show: string[]; hide?: string[] }>;
   }
 >;
 
@@ -127,10 +127,10 @@ export async function renderPsdPreview(
   const hash = createHash("sha256")
     .update(PSD_RENDER_VERSION)
     .update(source)
-    .update(JSON.stringify({filters, selections}))
+    .update(JSON.stringify({ filters, selections }))
     .digest("hex");
-  await mkdir(outputDir, {recursive: true});
-  const png = new PNG({width: psd.width, height: psd.height});
+  await mkdir(outputDir, { recursive: true });
+  const png = new PNG({ width: psd.width, height: psd.height });
   png.data = Buffer.from(output);
   await writeFile(path.join(outputDir, `${hash}.png`), PNG.sync.write(png));
   return hash;

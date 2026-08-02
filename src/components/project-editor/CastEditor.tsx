@@ -1,8 +1,8 @@
 "use client";
 
-import type {CSSProperties} from "react";
-import type {Character, ProjectDocument} from "@/domain/types";
-import type {UpdateProject} from "./types";
+import type { CSSProperties } from "react";
+import type { Character, ProjectDocument } from "@/domain/types";
+import type { UpdateProject } from "./types";
 
 export function CastEditor({
   project,
@@ -24,7 +24,7 @@ export function CastEditor({
         {project.characterIds.map((id, index) => {
           const character = characters.find((item) => item.id === id);
           return (
-            <div className="cast-chip" key={id} style={{borderColor: character?.color}}>
+            <div className="cast-chip" key={id} style={{ borderColor: character?.color }}>
               <span>{index % 2 === 0 ? "右" : "左"}</span>
               {character?.name ?? "不明"}
               <button
@@ -48,7 +48,7 @@ export function CastEditor({
                 const characterId = event.target.value;
                 const index = draft.characterIds.length;
                 draft.characterIds.push(characterId);
-                draft.characterAvatarOverrides[characterId] = {flipHorizontal: index % 2 === 1};
+                draft.characterAvatarOverrides[characterId] = { flipHorizontal: index % 2 === 1 };
               })
             }
           >
@@ -67,7 +67,7 @@ export function CastEditor({
           const character = characters.find((item) => item.id === characterId);
           const overrides = project.characterAvatarOverrides[characterId];
           return (
-            <label key={characterId} style={{"--character-color": character?.color ?? "#64748b"} as CSSProperties}>
+            <label key={characterId} style={{ "--character-color": character?.color ?? "#64748b" } as CSSProperties}>
               {character?.name ?? "不明"}
               <span>X</span>
               <input

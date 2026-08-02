@@ -1,9 +1,9 @@
 "use client";
 
-import {useState} from "react";
-import {PathPicker} from "./PsdTreePicker";
-import type {PsdFilter, TreeNode} from "./types";
-import {choiceNames, uniqueName} from "./utils";
+import { useState } from "react";
+import { PathPicker } from "./PsdTreePicker";
+import type { PsdFilter, TreeNode } from "./types";
+import { choiceNames, uniqueName } from "./utils";
 
 type Props = {
   name: string;
@@ -38,7 +38,7 @@ export function PsdFilterEditor({
     onChange({
       ...filter,
       choiceOrder: [...choiceNames(filter, tree), choiceName],
-      choices: {...filter.choices, [choiceName]: {show: []}},
+      choices: { ...filter.choices, [choiceName]: { show: [] } },
     });
   };
 
@@ -80,7 +80,7 @@ export function PsdFilterEditor({
             tree={tree}
             selected={filter.targets}
             selectable="all"
-            onChange={(targets) => onChange({...filter, targets})}
+            onChange={(targets) => onChange({ ...filter, targets })}
           />
           <PathPicker
             label="選択肢追加元フォルダ"
@@ -100,9 +100,9 @@ export function PsdFilterEditor({
               name={choiceName}
               choice={filter.choices[choiceName]}
               tree={tree}
-              onChange={(next) => onChange({...filter, choices: {...filter.choices, [choiceName]: next}})}
+              onChange={(next) => onChange({ ...filter, choices: { ...filter.choices, [choiceName]: next } })}
               onDelete={() => {
-                const choices = {...filter.choices};
+                const choices = { ...filter.choices };
                 delete choices[choiceName];
                 onChange({
                   ...filter,
@@ -113,7 +113,7 @@ export function PsdFilterEditor({
               onRename={(requestedName) => {
                 const otherNames = Object.keys(filter.choices).filter((name) => name !== choiceName);
                 const renamedName = uniqueName(requestedName, otherNames);
-                const choices = {...filter.choices};
+                const choices = { ...filter.choices };
                 delete choices[choiceName];
                 choices[renamedName] = filter.choices[choiceName];
                 onChange({
@@ -140,9 +140,9 @@ function ChoiceEditor({
   onRename,
 }: {
   name: string;
-  choice: {show: string[]; hide?: string[]};
+  choice: { show: string[]; hide?: string[] };
   tree: TreeNode[];
-  onChange: (choice: {show: string[]; hide?: string[]}) => void;
+  onChange: (choice: { show: string[]; hide?: string[] }) => void;
   onDelete: () => void;
   onRename: (name: string) => void;
 }) {
@@ -185,14 +185,14 @@ function ChoiceEditor({
             tree={tree}
             selected={choice.show}
             selectable="all"
-            onChange={(show) => onChange({...choice, show})}
+            onChange={(show) => onChange({ ...choice, show })}
           />
           <PathPicker
             label="この選択肢でOFFにするレイヤー"
             tree={tree}
             selected={choice.hide ?? []}
             selectable="all"
-            onChange={(hide) => onChange({...choice, hide})}
+            onChange={(hide) => onChange({ ...choice, hide })}
           />
         </div>
       ) : null}

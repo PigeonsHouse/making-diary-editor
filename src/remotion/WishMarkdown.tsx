@@ -1,8 +1,8 @@
-import type {ReactNode} from "react";
+import type { ReactNode } from "react";
 
-type ListItem = {text: string; children: ListItem[]};
+type ListItem = { text: string; children: ListItem[] };
 
-export function WishMarkdown({markdown}: {markdown: string}) {
+export function WishMarkdown({ markdown }: { markdown: string }) {
   const items = parseList(markdown);
   return (
     <div className="video-wish-markdown">
@@ -12,7 +12,7 @@ export function WishMarkdown({markdown}: {markdown: string}) {
   );
 }
 
-function List({items}: {items: ListItem[]}) {
+function List({ items }: { items: ListItem[] }) {
   return (
     <ul>
       {items.map((item, index) => (
@@ -25,7 +25,7 @@ function List({items}: {items: ListItem[]}) {
   );
 }
 
-function InlineMarkdown({text}: {text: string}) {
+function InlineMarkdown({ text }: { text: string }) {
   const parts: ReactNode[] = [];
   const pattern = /~~([^~]+)~~/g;
   let cursor = 0;
@@ -56,7 +56,7 @@ function parseList(markdown: string): ListItem[] {
       lists.push(previous.children);
     }
     const target = lists[Math.min(safeDepth, lists.length - 1)];
-    const item = {text, children: []};
+    const item = { text, children: [] };
     target.push(item);
     previous = item;
   }

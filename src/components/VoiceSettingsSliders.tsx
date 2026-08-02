@@ -1,18 +1,20 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
-import type {VoiceSettings} from "@/domain/types";
+import { useEffect, useRef, useState } from "react";
+import type { VoiceSettings } from "@/domain/types";
 
 type AdjustableKey = "speed" | "pitch" | "intonation" | "volume";
 type AdjustableValues = Pick<VoiceSettings, AdjustableKey>;
 
-const configs: Record<AdjustableKey, {label: string; min: number; baseMax: number; step: number; symmetric?: boolean}> =
-  {
-    speed: {label: "話速", min: 0.1, baseMax: 2, step: 0.05},
-    pitch: {label: "ピッチ", min: -0.15, baseMax: 0.15, step: 0.01, symmetric: true},
-    intonation: {label: "抑揚", min: 0, baseMax: 2, step: 0.05},
-    volume: {label: "音量", min: 0, baseMax: 2, step: 0.05},
-  };
+const configs: Record<
+  AdjustableKey,
+  { label: string; min: number; baseMax: number; step: number; symmetric?: boolean }
+> = {
+  speed: { label: "話速", min: 0.1, baseMax: 2, step: 0.05 },
+  pitch: { label: "ピッチ", min: -0.15, baseMax: 0.15, step: 0.01, symmetric: true },
+  intonation: { label: "抑揚", min: 0, baseMax: 2, step: 0.05 },
+  volume: { label: "音量", min: 0, baseMax: 2, step: 0.05 },
+};
 
 export function VoiceSettingsSliders({
   values,
@@ -63,7 +65,7 @@ function AdaptiveSlider({
   onChange,
   action,
 }: {
-  config: {label: string; min: number; baseMax: number; step: number; symmetric?: boolean};
+  config: { label: string; min: number; baseMax: number; step: number; symmetric?: boolean };
   value: number;
   disabled: boolean;
   multiplierEnabled: boolean;

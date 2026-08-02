@@ -1,10 +1,10 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import type {Character} from "@/domain/types";
-import {PsdFilterEditor} from "./psd-settings/PsdFilterEditor";
-import {TreePreview} from "./psd-settings/PsdTreePicker";
-import type {PsdFilter, TreeNode} from "./psd-settings/types";
+import { useEffect, useState } from "react";
+import type { Character } from "@/domain/types";
+import { PsdFilterEditor } from "./psd-settings/PsdFilterEditor";
+import { TreePreview } from "./psd-settings/PsdTreePicker";
+import type { PsdFilter, TreeNode } from "./psd-settings/types";
 import {
   choiceNames,
   collectDirectLayers,
@@ -48,7 +48,7 @@ export function PsdSettings({
     setState("アップロード中…");
     const form = new FormData();
     form.set("file", file);
-    const response = await fetch("/api/assets", {method: "POST", body: form});
+    const response = await fetch("/api/assets", { method: "POST", body: form });
     const asset = await response.json();
     if (!response.ok) return setState(asset.error);
     const treeResponse = await fetch(`/api/psd/${asset.id}`);
@@ -56,8 +56,8 @@ export function PsdSettings({
     if (!treeResponse.ok) return setState(treeBody.error);
     const previewResponse = await fetch(`/api/psd/${asset.id}`, {
       method: "POST",
-      headers: {"content-type": "application/json"},
-      body: JSON.stringify({filters: {}, selections: {}}),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ filters: {}, selections: {} }),
     });
     const previewBody = await previewResponse.json();
     update((draft) => {
@@ -77,7 +77,7 @@ export function PsdSettings({
     if (!requested) return;
     const name = uniqueName(requested, Object.keys(character.psdFilters));
     update((draft) => {
-      draft.psdFilters[name] = {targets: [], choiceOrder: [], choices: {}};
+      draft.psdFilters[name] = { targets: [], choiceOrder: [], choices: {} };
       draft.psdFilterOrder.push(name);
     });
   };
@@ -93,7 +93,7 @@ export function PsdSettings({
     const orderIndex = new Map(flattenLayerPaths(tree).map((path, index) => [path, index]));
     layers.sort((left, right) => (orderIndex.get(left.path) ?? 0) - (orderIndex.get(right.path) ?? 0));
     if (layers.length === 0) return setState("選択したフォルダ直下に単レイヤがありません");
-    const choices = {...filter.choices};
+    const choices = { ...filter.choices };
     const addedNames: string[] = [];
     const existingLayerNames = Object.values(choices)
       .map((choice) => layerNameFromPath(choice.show[0]))
@@ -107,11 +107,11 @@ export function PsdSettings({
       const duplicate = pendingNameCounts[layer.name] > 1 || existingLayerNames.includes(layer.name);
       const requestedName = duplicate ? `${layer.path.split("/").at(-2) ?? "root"}_${layer.name}` : layer.name;
       const choiceName = uniqueName(requestedName, Object.keys(choices));
-      choices[choiceName] = {show: [layer.path]};
+      choices[choiceName] = { show: [layer.path] };
       addedNames.push(choiceName);
     }
-    changeFilter(name, {...filter, choices, choiceOrder: [...choiceNames(filter, tree), ...addedNames]});
-    setSources((current) => ({...current, [name]: []}));
+    changeFilter(name, { ...filter, choices, choiceOrder: [...choiceNames(filter, tree), ...addedNames] });
+    setSources((current) => ({ ...current, [name]: [] }));
     setState(`${layers.length}件のレイヤーを選択肢へ追加しました`);
   };
   const preview = async () => {
@@ -119,8 +119,8 @@ export function PsdSettings({
     setState("プレビュー生成中…");
     const response = await fetch(`/api/psd/${character.psdAssetId}`, {
       method: "POST",
-      headers: {"content-type": "application/json"},
-      body: JSON.stringify({filters: character.psdFilters, selections: character.psdDefaults}),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ filters: character.psdFilters, selections: character.psdDefaults }),
     });
     const body = await response.json();
     if (!response.ok) return setState(body.error);
@@ -188,7 +188,7 @@ export function PsdSettings({
               tree={tree}
               defaultChoice={character.psdDefaults[name] ?? ""}
               sourceFolders={sources[name] ?? []}
-              setSourceFolders={(paths) => setSources((current) => ({...current, [name]: paths}))}
+              setSourceFolders={(paths) => setSources((current) => ({ ...current, [name]: paths }))}
               onAddSourceLayers={() => addSourceLayers(name, filter)}
               onChange={(next) => changeFilter(name, next)}
               onDefaultChange={(choice) =>

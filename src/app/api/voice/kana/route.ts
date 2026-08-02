@@ -1,6 +1,6 @@
-import {NextResponse} from "next/server";
-import {z} from "zod";
-import {apiError} from "@/server/http";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { apiError } from "@/server/http";
 
 const schema = z.object({
   text: z.string().min(1),
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!speakersResponse.ok) throw new Error("VOICEVOXの話者一覧を取得できません");
     const speakers = (await speakersResponse.json()) as Array<{
       name: string;
-      styles: Array<{name: string; id: number}>;
+      styles: Array<{ name: string; id: number }>;
     }>;
     const speaker = speakers.find((item) => item.name === input.voicevoxName);
     const styleId = speaker?.styles.find((item) => item.name === input.styleName)?.id;
@@ -25,11 +25,11 @@ export async function POST(request: Request) {
     const queryUrl = new URL("/audio_query", host);
     queryUrl.searchParams.set("text", input.text);
     queryUrl.searchParams.set("speaker", String(styleId));
-    const queryResponse = await fetch(queryUrl, {method: "POST"});
+    const queryResponse = await fetch(queryUrl, { method: "POST" });
     if (!queryResponse.ok) throw new Error(`VOICEVOX audio_query: ${queryResponse.status}`);
-    const audioQuery = (await queryResponse.json()) as {kana?: string | null};
+    const audioQuery = (await queryResponse.json()) as { kana?: string | null };
     if (!audioQuery.kana) throw new Error("VOICEVOXからkanaを取得できませんでした");
-    return NextResponse.json({kana: audioQuery.kana});
+    return NextResponse.json({ kana: audioQuery.kana });
   } catch (error) {
     return apiError(error);
   }
