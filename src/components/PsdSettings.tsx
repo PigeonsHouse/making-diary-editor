@@ -197,8 +197,8 @@ function FilterEditor({name, filter, tree, defaultChoice, sourceFolders, setSour
         <div className="psd-filter-toolbar">
           <button className="secondary" onClick={addEmptyChoice}>＋ 空の選択肢</button>
         </div>
-        <PathPicker label="表示制御の対象フォルダ" tree={tree} selected={filter.targets}
-          selectable="group" onChange={(targets) => onChange({...filter, targets})} />
+        <PathPicker label="表示制御の対象" tree={tree} selected={filter.targets}
+          selectable="all" onChange={(targets) => onChange({...filter, targets})} />
         <PathPicker label="選択肢追加元フォルダ" tree={tree} selected={sourceFolders}
           selectable="group" onChange={setSourceFolders}
           action={<button className="secondary psd-add-layers" onClick={onAddSourceLayers}>直下の単レイヤを選択肢へ一括追加</button>} />

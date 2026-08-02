@@ -4,6 +4,13 @@ import Link from "next/link";
 import {useEffect, useState} from "react";
 import type {ProjectRecord} from "@/domain/types";
 
+const diaryPeriod = (project: ProjectRecord) => {
+  const dates = project.document.diaries.map((diary) => diary.date).filter(Boolean).sort();
+  if (dates.length === 0) return "日付未設定";
+  const format = (date: string) => date.replaceAll("-", ".");
+  return `${format(dates[0])}〜${format(dates.at(-1)!)}`;
+};
+
 export default function HomePage() {
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [error, setError] = useState("");
@@ -39,7 +46,10 @@ export default function HomePage() {
       <div className="project-grid">
         {projects.map((project) => (
           <Link href={`/projects/${project.id}`} className="project-card" key={project.id}>
-            <div className="project-card-preview"><span>{project.document.diaries.length}</span> DAYS</div>
+            <div className="project-card-preview">
+              <div><span>{project.document.diaries.length}</span> DAYS</div>
+              <small>{diaryPeriod(project)}</small>
+            </div>
             <h2>{project.document.name}</h2>
             <p>{new Date(project.updatedAt).toLocaleString("ja-JP")} 更新</p>
           </Link>

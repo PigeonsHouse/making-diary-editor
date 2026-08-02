@@ -1,0 +1,113 @@
+.character-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 20px;
+}
+.character-list, .character-form {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.character-list {
+  align-self: start;
+  padding: 8px;
+}
+.character-list button {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+}
+.character-list button.active {
+  background: #edf0ff;
+  color: #334bbb;
+}
+.character-list button span {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 9px;
+  border-radius: 50%;
+}
+.character-form {
+  padding: 24px;
+}
+.form-title {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.form-title span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.character-form .field-grid label > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.avatar-position-preview {
+  margin-top: 18px;
+}
+.avatar-position-preview-heading,
+.avatar-position-values {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.avatar-position-preview-heading {
+  margin-bottom: 7px;
+}
+.avatar-position-preview-heading strong {
+  font-size: 13px;
+}
+.avatar-position-preview-heading span,
+.avatar-position-values {
+  color: var(--muted);
+  font-size: 10px;
+}
+.avatar-position-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: #f8fafc;
+  background-image: linear-gradient(#dde2e8 1px, transparent 1px), linear-gradient(90deg, #dde2e8 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.avatar-position-stage > img {
+  position: absolute;
+  z-index: 1;
+  max-width: none;
+  object-fit: contain;
+}
+.avatar-position-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+.avatar-position-dialogue-mask {
+  position: absolute;
+  z-index: 2;
+  inset: 77% 0 0;
+  display: grid;
+  place-items: center;
+  color: #dce6f2;
+  background: #07101eb8;
+  border-top: 2px solid #07101e;
+  font-size: 10px;
+  letter-spacing: .05em;
+}
+.avatar-position-values {
+  justify-content: flex-end;
+  margin-top: 5px;
+}

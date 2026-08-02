@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {createCharacter, createDialogue} from "./defaults";
-import {calculateBlock} from "./timeline";
+import {calculateBlock, dialogueAudioStartFrame} from "./timeline";
 
 const ready = (text: string, duration: number, pause: number | null) => ({
   ...createDialogue(character.id),
@@ -41,5 +41,15 @@ describe("calculateBlock", () => {
       dialogues: [ready("A", 1, null), ready("B", 1, -2)],
     }, [character]);
     expect(result.issues).toHaveLength(1);
+  });
+});
+
+describe("dialogueAudioStartFrame", () => {
+  it("keeps the beginning of the first dialogue after the diary intro", () => {
+    expect(dialogueAudioStartFrame(33, 0, 30)).toBe(33);
+  });
+
+  it("adds both the preceding blocks and the pause before a dialogue", () => {
+    expect(dialogueAudioStartFrame(183, 0.5, 30)).toBe(198);
   });
 });

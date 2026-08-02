@@ -10,8 +10,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import {calculateAvatarPositions, isAvatarFlipped} from "@/domain/avatar-layout";
 import {EDITOR_CONSTANTS} from "@/domain/defaults";
-import {calculateBlock} from "@/domain/timeline";
+import {calculateBlock, dialogueAudioStartFrame} from "@/domain/timeline";
 import type {Character, ContentBlock, DiaryEntry, ProjectDocument} from "@/domain/types";
 import {WishMarkdown} from "./WishMarkdown";
 
@@ -32,7 +33,7 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
       asset: null,
       dialogues: project.wishList.dialogues,
       durationSeconds: project.wishList.durationSeconds,
-      endHoldSeconds: null,
+      endHoldSeconds: project.wishList.endHoldSeconds,
     } satisfies ContentBlock;
     seconds += calculateBlock(block, characters).duration;
   }
@@ -55,7 +56,7 @@ export function DiaryVideo({project, characters, defaultEndHold}: Props) {
       asset: null,
       dialogues: project.wishList.dialogues,
       durationSeconds: project.wishList.durationSeconds,
-      endHoldSeconds: null,
+      endHoldSeconds: project.wishList.endHoldSeconds,
     };
     const timing = calculateBlock(block, characters, defaultEndHold);
     const duration = secondsToFrames(timing.duration, fps);
@@ -166,6 +167,7 @@ function DiaryScene({project, diary, characters, defaultEndHold}: Props & {diary
         <DialogueLayer
           block={activeBlock}
           localFrame={blockLocalFrame}
+          blockStartFrame={blockCursor}
           characters={characters}
           defaultEndHold={defaultEndHold}
         />
@@ -178,14 +180,23 @@ function Avatars({project, characters}: Props) {
   const selected = project.characterIds
     .map((id) => characters.find((character) => character.id === id))
     .filter(Boolean) as Character[];
+  const positions = calculateAvatarPositions(
+    selected.map((character) => ({
+      id: character.id,
+      edgeOffsetXPx: character.avatar.edgeOffsetXPx,
+      peekYPx: character.avatar.peekYPx,
+    })),
+    project.characterAvatarOverrides,
+    EDITOR_CONSTANTS.height * 0.77,
+  );
   return (
     <>
       {selected.map((character, index) => {
-        const side = index % 2 === 0 ? "right" : "left";
-        const level = Math.floor(index / 2);
-        const panelTop = EDITOR_CONSTANTS.height * 0.77;
-        const top = panelTop - project.avatarLayout.peekOffsetPx * (level + 1) +
-          character.avatar.offsetY;
+        const {side, level, top, edgeOffsetXPx} = positions[index];
+        const flipped = isAvatarFlipped(
+          index,
+          project.characterAvatarOverrides[character.id]?.flipHorizontal,
+        );
         if (!character.avatar.previewUrl) return null;
         return (
           <Img
@@ -194,9 +205,10 @@ function Avatars({project, characters}: Props) {
             style={{
               position: "absolute",
               top,
-              [side]: character.avatar.offsetX,
+              [side]: edgeOffsetXPx,
               height: `${70 * character.avatar.scale}%`,
               zIndex: 10 - level,
+              transform: flipped ? "scaleX(-1)" : undefined,
             }}
           />
         );
@@ -208,11 +220,13 @@ function Avatars({project, characters}: Props) {
 function DialogueLayer({
   block,
   localFrame,
+  blockStartFrame,
   characters,
   defaultEndHold,
 }: {
   block: ContentBlock;
   localFrame: number;
+  blockStartFrame: number;
   characters: Character[];
   defaultEndHold?: number;
 }) {
@@ -222,10 +236,10 @@ function DialogueLayer({
   const visible = timing.dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd);
   return (
     <>
-      {timing.dialogues.map((item) => item.dialogue.audio.url && seconds >= item.start ? (
+      {timing.dialogues.map((item) => item.dialogue.audio.url ? (
         <Sequence
           key={`audio-${item.dialogue.id}`}
-          from={Math.round(item.start * fps)}
+          from={dialogueAudioStartFrame(blockStartFrame, item.start, fps)}
           durationInFrames={secondsToFrames(item.audioEnd - item.start, fps)}
         >
           <Audio src={item.dialogue.audio.url} />
@@ -254,7 +268,7 @@ function WishScene({project, characters, block}: Props & {block: ContentBlock}) 
   return (
     <AbsoluteFill className="video-notebook">
       <WishMarkdown markdown={project.wishList?.markdown ?? ""} />
-      <DialogueLayer block={block} localFrame={frame} characters={characters} />
+      <DialogueLayer block={block} localFrame={frame} blockStartFrame={0} characters={characters} />
     </AbsoluteFill>
   );
 }

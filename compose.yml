@@ -20,7 +20,7 @@ services:
       redis:
         condition: service_healthy
 
-  renderer:
+  worker:
     build:
       context: .
       target: worker

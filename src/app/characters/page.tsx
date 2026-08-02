@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
-import {createCharacter} from "@/domain/defaults";
+import {createCharacter, EDITOR_CONSTANTS} from "@/domain/defaults";
 import type {Character} from "@/domain/types";
 import {PsdSettings} from "@/components/PsdSettings";
 import {VoiceSettingsSliders} from "@/components/VoiceSettingsSliders";
@@ -93,12 +93,48 @@ export default function CharactersPage() {
               <div className="wide"><VoiceSettingsSliders values={row.data.voice} defaults={row.data.voice}
                 onChange={(key, value) => { if (value !== undefined) update((draft) => { draft.voice[key] = value; }); }} /></div>
               <label>既定のセリフ前余白<input type="number" step="0.1" value={row.data.defaultPauseBeforeSeconds} onChange={(event) => update((draft) => { draft.defaultPauseBeforeSeconds = Number(event.target.value); })} /></label>
+              <label>立ち絵X既定（画面端から）<span><input type="number" value={row.data.avatar.edgeOffsetXPx} onChange={(event) => update((draft) => { draft.avatar.edgeOffsetXPx = Number(event.target.value); })} /> px</span></label>
+              <label>立ち絵Y既定（覗き量）<span><input type="number" min="0" value={row.data.avatar.peekYPx} onChange={(event) => update((draft) => { draft.avatar.peekYPx = Number(event.target.value); })} /> px</span></label>
               <label className="wide">性格・口調<textarea value={row.data.personality} onChange={(event) => update((draft) => { draft.personality = event.target.value; })} /></label>
             </div>
+            <AvatarPositionPreview character={row.data} />
             <PsdSettings character={row.data} update={update} />
           </section>
         ) : <div className="empty-state">キャラクターを追加してください。</div>}
       </div>
     </div>
+  );
+}
+
+function AvatarPositionPreview({character}: {character: Character}) {
+  const {edgeOffsetXPx, peekYPx, scale, previewUrl} = character.avatar;
+  const right = `${edgeOffsetXPx / EDITOR_CONSTANTS.width * 100}%`;
+  const top = `${(EDITOR_CONSTANTS.height * 0.77 - peekYPx) / EDITOR_CONSTANTS.height * 100}%`;
+
+  return (
+    <section className="avatar-position-preview">
+      <div className="avatar-position-preview-heading">
+        <strong>立ち絵位置プレビュー</strong>
+        <span>右配置時・1920 × 1080基準</span>
+      </div>
+      <div className="avatar-position-stage">
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={`${character.name}の配置プレビュー`}
+            style={{right, top, height: `${70 * scale}%`}}
+          />
+        ) : (
+          <div className="avatar-position-empty">PSDプレビューを生成すると表示されます</div>
+        )}
+        <div className="avatar-position-dialogue-mask">
+          <span>字幕矩形に隠れる領域</span>
+        </div>
+      </div>
+      <div className="avatar-position-values">
+        <span>X {edgeOffsetXPx}px</span>
+        <span>Y {peekYPx}px</span>
+      </div>
+    </section>
   );
 }

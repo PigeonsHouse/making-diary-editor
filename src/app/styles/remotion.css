@@ -1,0 +1,100 @@
+/* Remotion canvas */
+.video-date-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #1f2937;
+  font-size: 104px;
+  font-weight: 200;
+  letter-spacing: .18em;
+  z-index: 30;
+}
+.video-date-corner, .video-subtitle-corner {
+  position: absolute;
+  top: 48px;
+  z-index: 30;
+  padding: 13px 22px;
+  color: #fff;
+  background: #1d2530d9;
+  font-size: 34px;
+  letter-spacing: .08em;
+}
+.video-date-corner {
+  left: 48px;
+  padding: 13px 3px 8px;
+  color: #fff;
+  background: transparent;
+  font-size: 40px;
+  border-bottom: 8px solid #07101e;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 3px #07101e;
+  text-shadow: 0 3px 6px #0008;
+}
+.video-subtitle-corner {
+  right: 48px;
+}
+.video-dialogue-panel {
+  position: absolute;
+  inset: 77% 0 0;
+  z-index: 15;
+  background: #07101ed9;
+}
+.video-dialogue-stack {
+  position: absolute;
+  left: 150px;
+  right: 150px;
+  bottom: 24px;
+  height: 205px;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.video-dialogue {
+  grid-area: 1 / 1;
+  color: #fff;
+  paint-order: stroke fill;
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1.45;
+  filter: drop-shadow(0 5px 8px #000b);
+}
+.video-notebook {
+  background: repeating-linear-gradient(#fffdf6, #fffdf6 58px, #cdd9e5 60px);
+}
+.video-wish-markdown {
+  position: absolute;
+  inset: 150px 300px 300px;
+  color: #25282d;
+  font-size: 48px;
+  line-height: 1.65;
+}
+.video-wish-markdown h2 {
+  margin: 0 0 24px;
+  font-size: 64px;
+  line-height: 1.25;
+}
+.video-wish-markdown ul {
+  margin: 0;
+  padding-left: 1.35em;
+  list-style: disc outside;
+}
+.video-wish-markdown ul ul {
+  margin-top: .08em;
+  list-style-type: circle;
+}
+.video-wish-markdown ul ul ul {
+  list-style-type: square;
+}
+.video-wish-markdown li {
+  padding-left: .18em;
+}
+.video-wish-markdown del {
+  color: #66707a;
+  text-decoration-thickness: .08em;
+}
+.video-notebook .video-dialogue-stack {
+  bottom: 55px;
+  height: 220px;
+}

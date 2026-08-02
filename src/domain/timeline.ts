@@ -14,6 +14,14 @@ export type TimelineIssue = {
   message: string;
 };
 
+export function dialogueAudioStartFrame(
+  blockStartFrame: number,
+  dialogueStartSeconds: number,
+  fps: number,
+) {
+  return blockStartFrame + Math.round(dialogueStartSeconds * fps);
+}
+
 const characterMap = (characters: Character[]) =>
   new Map(characters.map((character) => [character.id, character]));
 

@@ -4,7 +4,10 @@ type ListItem = {text: string; children: ListItem[]};
 
 export function WishMarkdown({markdown}: {markdown: string}) {
   const items = parseList(markdown);
-  return <div className="video-wish-markdown"><List items={items} /></div>;
+  return <div className="video-wish-markdown">
+    <h2>今作りたいもの</h2>
+    <List items={items} />
+  </div>;
 }
 
 function List({items}: {items: ListItem[]}) {

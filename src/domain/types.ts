@@ -8,6 +8,14 @@ export const voiceSettingsSchema = z.object({
   volume: z.number().nonnegative().default(1),
 });
 
+export const voiceOverridesSchema = z.object({
+  styleName: z.string().min(1).optional(),
+  speed: z.number().positive().optional(),
+  pitch: z.number().optional(),
+  intonation: z.number().nonnegative().optional(),
+  volume: z.number().nonnegative().optional(),
+});
+
 export const characterSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
@@ -29,8 +37,8 @@ export const characterSchema = z.object({
   })).default({}),
   avatar: z.object({
     scale: z.number().positive().default(1),
-    offsetX: z.number().default(0),
-    offsetY: z.number().default(0),
+    edgeOffsetXPx: z.number().default(0),
+    peekYPx: z.number().nonnegative().default(180),
     previewUrl: z.string().nullable().default(null),
   }),
 });
@@ -41,7 +49,7 @@ export const dialogueSchema = z.object({
   text: z.string().min(1),
   kana: z.string().nullable().default(null),
   pauseBeforeSeconds: z.number().nullable().default(null),
-  voiceOverrides: voiceSettingsSchema.partial().default({}),
+  voiceOverrides: voiceOverridesSchema.default({}),
   psdOverrides: z.record(z.string(), z.string()).default({}),
   audio: z.object({
     status: z.enum(["idle", "generating", "ready", "error"]).default("idle"),
@@ -89,14 +97,17 @@ export const wishListSchema = z.object({
   markdown: z.string().default("- 作りたいもの"),
   dialogues: z.array(dialogueSchema).default([]),
   durationSeconds: z.number().positive().nullable().default(null),
+  endHoldSeconds: z.number().nonnegative().nullable().default(null),
 });
 
 export const projectDocumentSchema = z.object({
   name: z.string().min(1),
   characterIds: z.array(z.string().uuid()).default([]),
-  avatarLayout: z.object({
-    peekOffsetPx: z.number().nonnegative().default(180),
-  }),
+  characterAvatarOverrides: z.record(z.string(), z.object({
+    edgeOffsetXPx: z.number().optional(),
+    peekYPx: z.number().nonnegative().optional(),
+    flipHorizontal: z.boolean().optional(),
+  })).default({}),
   wishList: wishListSchema.nullable().default(null),
   diaries: z.array(diaryEntrySchema).default([]),
 });

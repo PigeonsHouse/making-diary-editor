@@ -1,0 +1,54 @@
+.voice-sliders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 14px;
+}
+.voice-slider {
+  min-width: 0;
+}
+.voice-slider.disabled {
+  opacity: .6;
+}
+.voice-slider-heading {
+  display: grid;
+  grid-template-columns: minmax(42px, 1fr) 46px auto auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+}
+.voice-slider-heading strong {
+  color: #59616b;
+  font-size: 11px;
+}
+.voice-slider-heading output {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-size: 11px;
+}
+.voice-slider-heading small {
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 9px;
+}
+.voice-override-toggle {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: #5c6671;
+  background: #fff;
+  white-space: nowrap;
+  font-size: 9px;
+}
+.voice-slider input[type="range"], .field-grid .voice-slider input[type="range"], .dialogue-row .voice-slider input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.voice-slider input[type="range"]:disabled {
+  cursor: default;
+}

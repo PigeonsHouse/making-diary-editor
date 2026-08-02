@@ -39,14 +39,24 @@ export async function POST(request: Request) {
     const speaker = speakers.find((item) => item.name === input.voicevoxName);
     const styleId = speaker?.styles.find((item) => item.name === input.styleName)?.id;
     if (styleId === undefined) throw new Error("VOICEVOXの話者またはスタイルが見つかりません");
-    const queryText = input.kana || input.text;
     const queryUrl = new URL("/audio_query", host);
-    queryUrl.searchParams.set("text", queryText);
+    queryUrl.searchParams.set("text", input.text);
     queryUrl.searchParams.set("speaker", String(styleId));
-    if (input.kana) queryUrl.searchParams.set("is_kana", "true");
     const queryResponse = await fetch(queryUrl, {method: "POST"});
     if (!queryResponse.ok) throw new Error(`VOICEVOX audio_query: ${queryResponse.status}`);
     const audioQuery = await queryResponse.json();
+    if (input.kana) {
+      const phrasesUrl = new URL("/accent_phrases", host);
+      phrasesUrl.searchParams.set("text", input.kana);
+      phrasesUrl.searchParams.set("speaker", String(styleId));
+      phrasesUrl.searchParams.set("is_kana", "true");
+      const phrasesResponse = await fetch(phrasesUrl, {method: "POST"});
+      if (!phrasesResponse.ok) {
+        throw new Error(`VOICEVOX accent_phrases: ${phrasesResponse.status}`);
+      }
+      audioQuery.accent_phrases = await phrasesResponse.json();
+      audioQuery.kana = input.kana;
+    }
     Object.assign(audioQuery, {
       speedScale: input.speed,
       pitchScale: input.pitch,
