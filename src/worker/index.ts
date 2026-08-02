@@ -6,8 +6,10 @@ import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
 import { Worker } from "bullmq";
 import { eq } from "drizzle-orm";
+import { createDialoguePsdPreviewSpecs } from "@/domain/psd-previews";
 import { db } from "@/server/db";
 import { assets, characters, renderJobs } from "@/server/db/schema";
+import { renderPsdPreview } from "@/server/psd";
 import { redis } from "@/server/queue";
 
 const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
@@ -44,9 +46,30 @@ async function main() {
       const [job] = await db.select().from(renderJobs).where(eq(renderJobs.id, renderJobId));
       if (!job) throw new Error("Render job not found");
       const characterRows = await db.select().from(characters);
+      const characterData = characterRows.map((row) => row.data);
+      const psdPreviewSpecs = createDialoguePsdPreviewSpecs(job.snapshot, characterData);
+      const dialoguePsdPreviewUrls: Record<string, string> = {};
+      if (psdPreviewSpecs.length > 0) {
+        const assetRows = await db.select().from(assets);
+        const assetsById = new Map(assetRows.map((asset) => [asset.id, asset]));
+        for (const spec of psdPreviewSpecs) {
+          const asset = assetsById.get(spec.assetId);
+          if (!asset) continue;
+          const hash = await renderPsdPreview(
+            asset.originalPath,
+            spec.filters,
+            spec.selections,
+            path.join(dataDir, "psd-previews"),
+          );
+          for (const dialogueId of spec.dialogueIds) {
+            dialoguePsdPreviewUrls[dialogueId] = `/api/files/psd/${hash}.png`;
+          }
+        }
+      }
       const inputProps = resolveAssetUrls({
         project: job.snapshot,
-        characters: characterRows.map((row) => row.data),
+        characters: characterData,
+        dialoguePsdPreviewUrls,
       });
       const outputPath = path.join(rendersDir, `${renderJobId}.mp4`);
       try {

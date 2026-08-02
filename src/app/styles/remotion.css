@@ -67,6 +67,7 @@
 .video-wish-markdown {
   position: absolute;
   inset: 150px 300px 300px;
+  z-index: 20;
   color: #25282d;
   font-size: 48px;
   line-height: 1.65;

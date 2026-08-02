@@ -4,13 +4,16 @@ import { Player } from "@remotion/player";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import type { Character, ProjectDocument } from "@/domain/types";
 import { DiaryVideo, getVideoDuration } from "@/remotion/DiaryVideo";
+import { useDialoguePsdPreviewUrls } from "./project-editor/useDialoguePsdPreviewUrls";
 
 export function VideoPreview({ project, characters }: { project: ProjectDocument; characters: Character[] }) {
+  const dialoguePsdPreviewUrls = useDialoguePsdPreviewUrls(project, characters);
+
   return (
     <div className="preview-shell">
       <Player
         component={DiaryVideo}
-        inputProps={{ project, characters }}
+        inputProps={{ project, characters, dialoguePsdPreviewUrls }}
         durationInFrames={getVideoDuration(project, characters)}
         fps={EDITOR_CONSTANTS.fps}
         compositionWidth={EDITOR_CONSTANTS.width}

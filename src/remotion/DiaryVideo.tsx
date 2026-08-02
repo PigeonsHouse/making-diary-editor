@@ -10,16 +10,17 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { calculateAvatarPositions, isAvatarFlipped } from "@/domain/avatar-layout";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
 import type { Character, ContentBlock, DiaryEntry, ProjectDocument } from "@/domain/types";
+import { Avatars } from "./Avatars";
 import { WishMarkdown } from "./WishMarkdown";
 
 type Props = {
   project: ProjectDocument;
   characters: Character[];
   defaultEndHold?: number;
+  dialoguePsdPreviewUrls?: Record<string, string>;
 };
 
 const secondsToFrames = (seconds: number, fps: number) => Math.max(1, Math.ceil(seconds * fps));
@@ -44,7 +45,7 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
   return Math.max(fps, secondsToFrames(seconds, fps));
 }
 
-export function DiaryVideo({ project, characters, defaultEndHold }: Props) {
+export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPreviewUrls }: Props) {
   const { fps } = useVideoConfig();
   let cursor = 0;
   const sequences: React.ReactNode[] = [];
@@ -62,7 +63,13 @@ export function DiaryVideo({ project, characters, defaultEndHold }: Props) {
     const duration = secondsToFrames(timing.duration, fps);
     sequences.push(
       <Sequence key="wish" from={cursor} durationInFrames={duration}>
-        <WishScene project={project} characters={characters} block={block} />
+        <WishScene
+          project={project}
+          characters={characters}
+          block={block}
+          defaultEndHold={defaultEndHold}
+          dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+        />
       </Sequence>,
     );
     cursor += duration;
@@ -77,7 +84,13 @@ export function DiaryVideo({ project, characters, defaultEndHold }: Props) {
     const duration = secondsToFrames(introSeconds + blockSeconds, fps);
     sequences.push(
       <Sequence key={diary.id} from={cursor} durationInFrames={duration}>
-        <DiaryScene project={project} diary={diary} characters={characters} defaultEndHold={defaultEndHold} />
+        <DiaryScene
+          project={project}
+          diary={diary}
+          characters={characters}
+          defaultEndHold={defaultEndHold}
+          dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+        />
       </Sequence>,
     );
     cursor += duration;
@@ -126,7 +139,13 @@ function AssetBackground({ block }: { block?: ContentBlock }) {
   );
 }
 
-function DiaryScene({ project, diary, characters, defaultEndHold }: Props & { diary: DiaryEntry }) {
+function DiaryScene({
+  project,
+  diary,
+  characters,
+  defaultEndHold,
+  dialoguePsdPreviewUrls,
+}: Props & { diary: DiaryEntry }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const introFrames = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds, fps);
@@ -147,11 +166,20 @@ function DiaryScene({ project, diary, characters, defaultEndHold }: Props & { di
     frame < introFrames
       ? interpolate(frame, [centerEnd, introFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
       : 1;
+  const activeDialogues =
+    frame >= introFrames && activeBlock
+      ? getVisibleDialogues(activeBlock, blockLocalFrame, fps, characters, defaultEndHold)
+      : [];
 
   return (
     <AbsoluteFill>
       <AssetBackground block={activeBlock} />
-      <Avatars project={project} characters={characters} />
+      <Avatars
+        project={project}
+        characters={characters}
+        activeDialogues={activeDialogues}
+        dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+      />
       {frame < centerEnd ? (
         <div className="video-date-center">{formatDate(diary.date)}</div>
       ) : (
@@ -175,44 +203,6 @@ function DiaryScene({ project, diary, characters, defaultEndHold }: Props & { di
         />
       ) : null}
     </AbsoluteFill>
-  );
-}
-
-function Avatars({ project, characters }: Props) {
-  const selected = project.characterIds
-    .map((id) => characters.find((character) => character.id === id))
-    .filter(Boolean) as Character[];
-  const positions = calculateAvatarPositions(
-    selected.map((character) => ({
-      id: character.id,
-      edgeOffsetXPx: character.avatar.edgeOffsetXPx,
-      peekYPx: character.avatar.peekYPx,
-    })),
-    project.characterAvatarOverrides,
-    EDITOR_CONSTANTS.height * 0.77,
-  );
-  return (
-    <>
-      {selected.map((character, index) => {
-        const { side, level, top, edgeOffsetXPx } = positions[index];
-        const flipped = isAvatarFlipped(index, project.characterAvatarOverrides[character.id]?.flipHorizontal);
-        if (!character.avatar.previewUrl) return null;
-        return (
-          <Img
-            key={character.id}
-            src={character.avatar.previewUrl}
-            style={{
-              position: "absolute",
-              top,
-              [side]: edgeOffsetXPx,
-              height: `${70 * character.avatar.scale}%`,
-              zIndex: 10 - level,
-              transform: flipped ? "scaleX(-1)" : undefined,
-            }}
-          />
-        );
-      })}
-    </>
   );
 }
 
@@ -264,10 +254,37 @@ function DialogueLayer({
   );
 }
 
-function WishScene({ project, characters, block }: Props & { block: ContentBlock }) {
+function getVisibleDialogues(
+  block: ContentBlock,
+  localFrame: number,
+  fps: number,
+  characters: Character[],
+  defaultEndHold?: number,
+) {
+  const seconds = localFrame / fps;
+  return calculateBlock(block, characters, defaultEndHold)
+    .dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd)
+    .map((item) => item.dialogue);
+}
+
+function WishScene({
+  project,
+  characters,
+  block,
+  defaultEndHold,
+  dialoguePsdPreviewUrls,
+}: Props & { block: ContentBlock }) {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const activeDialogues = getVisibleDialogues(block, frame, fps, characters, defaultEndHold);
   return (
     <AbsoluteFill className="video-notebook">
+      <Avatars
+        project={project}
+        characters={characters}
+        activeDialogues={activeDialogues}
+        dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+      />
       <WishMarkdown markdown={project.wishList?.markdown ?? ""} />
       <DialogueLayer block={block} localFrame={frame} blockStartFrame={0} characters={characters} />
     </AbsoluteFill>

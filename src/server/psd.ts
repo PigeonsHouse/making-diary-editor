@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { initializeCanvas, readPsd, type Layer } from "ag-psd";
 import { PNG } from "pngjs";
@@ -63,6 +63,18 @@ export async function renderPsdPreview(
   outputDir: string,
 ) {
   const source = await readFile(filePath);
+  const hash = createHash("sha256")
+    .update(PSD_RENDER_VERSION)
+    .update(source)
+    .update(JSON.stringify({ filters, selections }))
+    .digest("hex");
+  const outputPath = path.join(outputDir, `${hash}.png`);
+  try {
+    await access(outputPath);
+    return hash;
+  } catch {
+    // キャッシュがない組み合わせだけPSDを合成する。
+  }
   const psd = readPsd(source, {
     skipCompositeImageData: true,
     skipThumbnail: true,
@@ -124,14 +136,9 @@ export async function renderPsdPreview(
     }
   };
   walk(psd.children ?? [], [], true);
-  const hash = createHash("sha256")
-    .update(PSD_RENDER_VERSION)
-    .update(source)
-    .update(JSON.stringify({ filters, selections }))
-    .digest("hex");
   await mkdir(outputDir, { recursive: true });
   const png = new PNG({ width: psd.width, height: psd.height });
   png.data = Buffer.from(output);
-  await writeFile(path.join(outputDir, `${hash}.png`), PNG.sync.write(png));
+  await writeFile(outputPath, PNG.sync.write(png));
   return hash;
 }
