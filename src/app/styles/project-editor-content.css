@@ -1,0 +1,127 @@
+.diary-card {
+  overflow: hidden;
+}
+.diary-card.selected {
+  border-color: #9daaf7;
+  box-shadow: 0 0 0 1px #4361ee13;
+}
+.diary-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 15px;
+  background: #f2f4f7;
+  border-bottom: 1px solid var(--line);
+}
+.diary-heading input {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+.grow {
+  flex: 1;
+}
+.order-badge {
+  color: #89919c;
+  font-size: 11px;
+  font-weight: 900;
+}
+.icon {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+.icon.danger {
+  color: var(--danger);
+}
+.icon.danger:hover {
+  background: #ffebee;
+}
+.block-card {
+  margin: 13px;
+  border: 1px solid #dfe3e8;
+  border-radius: 9px;
+  background: #fbfcfd;
+  overflow: hidden;
+}
+.asset-control {
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 1px solid #e1e5ea;
+  background: #f5f7f9;
+}
+.asset-control .asset-select {
+  min-width: 140px;
+}
+.asset-control .remove-block {
+  flex: none;
+  margin-left: auto;
+}
+.asset-control select,
+.asset-control input {
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+.asset-control label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.asset-control label input {
+  width: 54px;
+}
+.drag-handle {
+  flex: none;
+  color: #a3abb4;
+  font-size: 18px;
+  line-height: 1;
+}
+.inline-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.inline-field input {
+  width: 58px;
+  padding: 5px;
+}
+.diary-actions {
+  padding: 0 13px 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.gemini-button {
+  color: #5d3bb4;
+  background: #eee8ff;
+}
+.gemini-box {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.gemini-box textarea {
+  width: 100%;
+  min-height: 75px;
+  padding: 9px;
+  border: 1px solid #cabcf3;
+  border-radius: 7px;
+}
+.gemini-box span {
+  color: var(--danger);
+  font-size: 11px;
+}

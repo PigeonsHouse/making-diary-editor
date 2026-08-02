@@ -1,0 +1,244 @@
+.dialogue-row {
+  display: grid;
+  grid-template-columns: 26px 112px 82px minmax(180px, 1fr) 34px 28px;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 10px;
+  border-bottom: 1px solid #e7eaee;
+  border-left: 4px solid var(--speaker);
+}
+.dialogue-index {
+  color: #9aa1aa;
+  text-align: center;
+  font-size: 10px;
+}
+.dialogue-index.draggable {
+  cursor: grab;
+  user-select: none;
+}
+.dialogue-index.draggable:active {
+  cursor: grabbing;
+}
+.dialogue-row select,
+.dialogue-row textarea,
+.dialogue-row input {
+  width: 100%;
+  padding: 7px;
+  border: 1px solid #d8dde3;
+  border-radius: 5px;
+  background: #fff;
+}
+.dialogue-row textarea {
+  min-height: 52px;
+  resize: vertical;
+}
+.pause-field {
+  color: var(--muted);
+  font-size: 9px;
+}
+.audio-status {
+  color: #9aa2ac;
+  text-align: center;
+  font-size: 9px;
+}
+.audio-status.ready button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #4ba26f;
+}
+.audio-status.generating {
+  color: var(--primary);
+}
+.audio-status.error {
+  color: var(--danger);
+  font-weight: 900;
+}
+.dialogue-kana-options {
+  grid-column: 2 / -1;
+  border-top: 1px solid #e1e5e9;
+}
+.dialogue-kana-options > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 2px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+.dialogue-kana-options > summary small {
+  font-size: 9px;
+  font-weight: 400;
+}
+.dialogue-kana-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.dialogue-kana-empty > button,
+.dialogue-kana-actions > button {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+.dialogue-kana-empty small,
+.dialogue-kana-actions small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.dialogue-kana-empty small.error,
+.dialogue-kana-actions small.error {
+  color: var(--danger);
+}
+.dialogue-row .dialogue-kana-options > textarea {
+  min-height: 38px;
+  margin: 3px 0 5px;
+  padding: 6px 7px;
+  font-family: ui-monospace, "Noto Sans Mono CJK JP", monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.dialogue-kana-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.dialogue-psd-options {
+  grid-column: 2 / -1;
+  border-top: 1px solid #e1e5e9;
+}
+.dialogue-psd-options > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 2px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+.dialogue-psd-options > summary small {
+  font-size: 9px;
+  font-weight: 400;
+}
+.dialogue-psd-body {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 10px;
+  padding: 5px 0;
+}
+.dialogue-psd-preview {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f7f8fa;
+  color: var(--muted);
+  font-size: 9px;
+}
+.dialogue-psd-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+.dialogue-psd-preview small {
+  padding: 0 5px 4px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 8px;
+}
+.dialogue-psd-fields {
+  display: flex;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.dialogue-psd-fields label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.dialogue-psd-fields select {
+  width: auto;
+  min-width: 120px;
+  padding: 5px;
+}
+.dialogue-voice-options {
+  grid-column: 2 / -1;
+  border-top: 1px solid #e1e5e9;
+}
+.dialogue-voice-options > summary {
+  padding: 4px 2px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+.dialogue-voice-options .voice-sliders {
+  padding: 5px 0;
+}
+.duration-field {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.duration-field input {
+  width: 72px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.add-dialogue {
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  color: #58616b;
+  background: #f1f3f6;
+}
+.dialogue-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 12px;
+}
+.dialogue-footer .add-dialogue {
+  flex: 1;
+  width: auto;
+}
+.end-hold-field {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.end-hold-field input {
+  width: 64px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}

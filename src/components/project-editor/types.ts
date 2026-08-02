@@ -1,0 +1,25 @@
+import type {Character, ProjectDocument} from "@/domain/types";
+
+export type CharacterRow = {
+  id: string;
+  revision: number;
+  data: Character;
+};
+
+export type AssetRow = {
+  id: string;
+  kind: "image" | "video" | "psd";
+  originalName: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  error: string | null;
+};
+
+export type EditorTab = "general" | "wish" | `diary:${string}`;
+export type UpdateProject = (recipe: (draft: ProjectDocument) => void) => void;
+
+export type DialogueDragLocation = {
+  diaryId: string;
+  blockIndex: number;
+  dialogueIndex: number;
+};
