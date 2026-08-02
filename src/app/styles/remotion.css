@@ -54,12 +54,21 @@
 }
 .video-dialogue {
   grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
   color: #fff;
   paint-order: stroke fill;
   font-size: 58px;
   font-weight: 900;
   line-height: 1.45;
   filter: drop-shadow(0 5px 8px #000b);
+}
+.video-dialogue-line {
+  display: block;
+  white-space: nowrap;
 }
 .video-notebook {
   background: repeating-linear-gradient(#fffdf6, #fffdf6 58px, #cdd9e5 60px);

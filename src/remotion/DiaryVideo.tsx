@@ -2,6 +2,7 @@
 
 import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
+import { layoutSubtitleText } from "@/domain/subtitle-layout";
 import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
 import type { Character, ContentBlock, DiaryEntry, ProjectDocument } from "@/domain/types";
 import { AssetBackground } from "./AssetBackground";
@@ -198,13 +199,22 @@ function DialogueLayer({
       <div className="video-dialogue-stack">
         {visible.map((item, index) => {
           const character = characters.find((candidate) => candidate.id === item.dialogue.characterId);
+          const subtitle = layoutSubtitleText(item.dialogue.text);
           return (
             <div
               key={item.dialogue.id}
               className="video-dialogue"
-              style={{ WebkitTextStroke: `10px ${character?.color ?? "#64748b"}`, zIndex: index }}
+              style={{
+                WebkitTextStroke: `10px ${character?.color ?? "#64748b"}`,
+                fontSize: subtitle.fontSize,
+                zIndex: index,
+              }}
             >
-              {item.dialogue.text}
+              {subtitle.lines.map((line, lineIndex) => (
+                <span className="video-dialogue-line" key={`${lineIndex}-${line}`}>
+                  {line}
+                </span>
+              ))}
             </div>
           );
         })}
