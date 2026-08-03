@@ -1,5 +1,6 @@
 "use client";
 
+import "@fontsource-variable/noto-sans-jp";
 import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { layoutSubtitleText } from "@/domain/subtitle-layout";
@@ -88,7 +89,11 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
     cursor += duration;
   });
 
-  return <AbsoluteFill style={{ background: "#f4f6f8" }}>{sequences}</AbsoluteFill>;
+  return (
+    <AbsoluteFill style={{ background: "#f4f6f8", fontFamily: '"Noto Sans JP Variable", sans-serif' }}>
+      {sequences}
+    </AbsoluteFill>
+  );
 }
 
 function DiaryScene({
