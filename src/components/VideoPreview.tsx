@@ -24,6 +24,7 @@ export function VideoPreview({ project, characters }: { project: ProjectDocument
         compositionWidth={EDITOR_CONSTANTS.width}
         compositionHeight={EDITOR_CONSTANTS.height}
         controls
+        numberOfSharedAudioTags={60}
         acknowledgeRemotionLicense
         style={{ width: "100%", aspectRatio: "16 / 9" }}
       />
