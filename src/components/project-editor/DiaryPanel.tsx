@@ -105,6 +105,7 @@ export function DiaryPanel({
             block={block}
             diaryId={diary.id}
             blockIndex={blockIndex}
+            blockCount={diary.blocks.length}
             characters={characters}
             projectCharacterIds={project.characterIds}
             assets={assets}

@@ -15,6 +15,7 @@ type Props = {
   block: ContentBlock;
   diaryId: string;
   blockIndex: number;
+  blockCount: number;
   characters: Character[];
   projectCharacterIds: string[];
   assets: AssetRow[];
@@ -35,6 +36,7 @@ export function BlockEditor({
   block,
   diaryId,
   blockIndex,
+  blockCount,
   characters,
   projectCharacterIds,
   assets,
@@ -81,6 +83,28 @@ export function BlockEditor({
         >
           ⠿
         </span>
+        <div className="block-move-buttons" role="group" aria-label="コンテンツの並べ替え">
+          <button
+            type="button"
+            className="icon block-move-button"
+            title="コンテンツを上へ移動"
+            aria-label="コンテンツを上へ移動"
+            disabled={blockIndex === 0}
+            onClick={() => moveBlock(blockIndex, blockIndex - 1)}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="icon block-move-button"
+            title="コンテンツを下へ移動"
+            aria-label="コンテンツを下へ移動"
+            disabled={blockIndex === blockCount - 1}
+            onClick={() => moveBlock(blockIndex, blockIndex + 2)}
+          >
+            ↓
+          </button>
+        </div>
         <select
           className="asset-select"
           aria-label="素材"

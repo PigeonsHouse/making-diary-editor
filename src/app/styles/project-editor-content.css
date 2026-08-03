@@ -121,6 +121,26 @@
 .drag-handle:active {
   cursor: grabbing;
 }
+.block-move-buttons {
+  display: inline-flex;
+  gap: 2px;
+}
+.block-move-button {
+  width: 24px;
+  height: 24px;
+  color: #69737e;
+  background: #e9edf1;
+  font-size: 13px;
+  line-height: 1;
+}
+.block-move-button:hover:not(:disabled) {
+  color: var(--ink);
+  background: #dde3e9;
+}
+.block-move-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 .inline-field {
   display: flex;
   align-items: center;
