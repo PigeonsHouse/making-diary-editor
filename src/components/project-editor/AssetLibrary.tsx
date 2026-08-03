@@ -43,16 +43,16 @@ export function AssetLibrary({ assets, onChanged }: { assets: AssetRow[]; onChan
   return (
     <details className="panel">
       <summary>
-        <span>素材</span>
+        <span>共通素材ライブラリ</span>
         <small>{assets.length}件</small>
       </summary>
       <div className="asset-library">
         <div className="asset-library-toolbar">
           <label className="secondary upload-button">
-            {uploading ? "変換中…" : "＋ 画像・動画をアップロード"}
+            {uploading ? "変換中…" : "＋ 共通素材をアップロード"}
             <input
               type="file"
-              accept="image/*,video/*,.psd"
+              accept="image/*,video/*,audio/*,.psd"
               disabled={uploading}
               onChange={(event) => void upload(event.target.files?.[0])}
             />
@@ -67,6 +67,8 @@ export function AssetLibrary({ assets, onChanged }: { assets: AssetRow[]; onChan
                   <img src={`/api/files/assets/${asset.id}`} alt={asset.originalName} loading="lazy" />
                 ) : asset.status === "ready" && asset.kind === "video" ? (
                   <video src={`/api/files/assets/${asset.id}`} controls preload="metadata" />
+                ) : asset.status === "ready" && asset.kind === "audio" ? (
+                  <audio src={`/api/files/assets/${asset.id}`} controls preload="metadata" />
                 ) : (
                   <div className="asset-preview-placeholder">
                     <strong>{asset.kind === "psd" ? "PSD" : asset.status === "processing" ? "変換中" : "!"}</strong>
@@ -98,6 +100,6 @@ export function AssetLibrary({ assets, onChanged }: { assets: AssetRow[]; onChan
   );
 }
 
-const assetKindLabel = (kind: AssetRow["kind"]) => ({ image: "画像", video: "動画", psd: "PSD" })[kind];
+const assetKindLabel = (kind: AssetRow["kind"]) => ({ image: "画像", video: "動画", audio: "音声", psd: "PSD" })[kind];
 const assetStatusLabel = (status: string) =>
   ({ ready: "利用可能", processing: "変換中", error: "エラー" })[status] ?? status;

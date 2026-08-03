@@ -3,6 +3,7 @@
 import { createBlock } from "@/domain/defaults";
 import type { Character, DiaryEntry, ProjectDocument } from "@/domain/types";
 import { AssetLibrary } from "./AssetLibrary";
+import { AudioOverrideEditor } from "./AudioSettings";
 import { BlockEditor } from "./BlockEditor";
 import { GeminiButton } from "./GeminiButton";
 import type { AssetRow, UpdateProject } from "./types";
@@ -72,6 +73,32 @@ export function DiaryPanel({
             ×
           </button>
         </div>
+        <div className="scene-audio-controls">
+          <AudioOverrideEditor
+            label="シーン冒頭SE"
+            value={diary.sceneIntroSe}
+            projectDefault={project.audio.sceneIntroSe}
+            assets={assets}
+            noneLabel="SEなし"
+            onChange={(value) =>
+              update((draft) => {
+                draft.diaries[diaryIndex].sceneIntroSe = value;
+              })
+            }
+          />
+          <AudioOverrideEditor
+            label="BGM"
+            value={diary.bgm}
+            projectDefault={project.audio.bgm}
+            assets={assets}
+            noneLabel="BGMなし"
+            onChange={(value) =>
+              update((draft) => {
+                draft.diaries[diaryIndex].bgm = value;
+              })
+            }
+          />
+        </div>
         {diary.blocks.map((block, blockIndex) => (
           <BlockEditor
             key={block.id}
@@ -81,6 +108,7 @@ export function DiaryPanel({
             characters={characters}
             projectCharacterIds={project.characterIds}
             assets={assets}
+            projectContentSe={project.audio.contentSe}
             updateBlock={(recipe) =>
               update((draft) => {
                 recipe(draft.diaries[diaryIndex].blocks[blockIndex]);

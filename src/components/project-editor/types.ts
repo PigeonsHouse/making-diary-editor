@@ -8,7 +8,7 @@ export type CharacterRow = {
 
 export type AssetRow = {
   id: string;
-  kind: "image" | "video" | "psd";
+  kind: "image" | "video" | "audio" | "psd";
   originalName: string;
   status: string;
   metadata: Record<string, unknown>;

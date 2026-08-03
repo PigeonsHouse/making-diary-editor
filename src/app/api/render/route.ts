@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { validateProject } from "@/domain/timeline";
+import { projectDocumentSchema } from "@/domain/types";
 import { db } from "@/server/db";
 import { characters, projects, renderJobs } from "@/server/db/schema";
 import { apiError } from "@/server/http";
@@ -11,9 +12,10 @@ export async function POST(request: Request) {
     const { projectId } = await request.json();
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
     if (!project) return NextResponse.json({ error: "プロジェクトが見つかりません" }, { status: 404 });
+    const document = projectDocumentSchema.parse(project.document);
     const characterRows = await db.select().from(characters);
     const issues = validateProject(
-      project.document,
+      document,
       characterRows.map((row) => row.data),
     );
     if (issues.length) return NextResponse.json({ error: "レンダリング前の修正が必要です", issues }, { status: 422 });
@@ -21,7 +23,7 @@ export async function POST(request: Request) {
       .insert(renderJobs)
       .values({
         projectId,
-        snapshot: project.document,
+        snapshot: document,
       })
       .returning();
     await renderQueue.add(

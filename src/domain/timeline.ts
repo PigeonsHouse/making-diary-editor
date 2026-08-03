@@ -15,6 +15,8 @@ export type TimelineIssue = {
   message: string;
 };
 
+type TimelineBlock = Omit<ContentBlock, "entrySe"> & Partial<Pick<ContentBlock, "entrySe">>;
+
 export function dialogueAudioStartFrame(blockStartFrame: number, dialogueStartSeconds: number, fps: number) {
   return blockStartFrame + Math.round(dialogueStartSeconds * fps);
 }
@@ -27,7 +29,7 @@ const isPositiveFinite = (value: number | null | undefined): value is number =>
 const finiteOr = (value: number, fallback: number) => (Number.isFinite(value) ? value : fallback);
 
 export function calculateBlock(
-  block: ContentBlock,
+  block: TimelineBlock,
   characters: Character[],
   defaultEndHold: number = EDITOR_CONSTANTS.defaultBlockEndHoldSeconds,
 ): { dialogues: TimedDialogue[]; duration: number; issues: TimelineIssue[] } {

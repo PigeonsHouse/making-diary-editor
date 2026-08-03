@@ -2,7 +2,8 @@
 
 import { createDialogue } from "@/domain/defaults";
 import { calculateBlock } from "@/domain/timeline";
-import type { Character, ContentBlock } from "@/domain/types";
+import type { AudioClip, Character, ContentBlock } from "@/domain/types";
+import { AudioOverrideEditor } from "./AudioSettings";
 import { DialogueEditor } from "./DialogueEditor";
 import { VideoAssetControls } from "./VideoAssetControls";
 import { getAssetDurationSeconds } from "./asset-metadata";
@@ -17,6 +18,7 @@ type Props = {
   characters: Character[];
   projectCharacterIds: string[];
   assets: AssetRow[];
+  projectContentSe: AudioClip | null;
   updateBlock: (recipe: (draft: ContentBlock) => void) => void;
   remove: () => void;
   moveBlock: (fromBlockIndex: number, toBlockIndex: number) => void;
@@ -36,6 +38,7 @@ export function BlockEditor({
   characters,
   projectCharacterIds,
   assets,
+  projectContentSe,
   updateBlock,
   remove,
   moveBlock,
@@ -105,7 +108,7 @@ export function BlockEditor({
         >
           <option value="">基本背景</option>
           {assets
-            .filter((item) => item.status === "ready" && item.kind !== "psd")
+            .filter((item) => item.status === "ready" && (item.kind === "image" || item.kind === "video"))
             .map((item) => (
               <option value={item.id} key={item.id}>
                 {item.originalName}
@@ -156,6 +159,14 @@ export function BlockEditor({
             ) : null}
           </>
         ) : null}
+        <AudioOverrideEditor
+          label="コンテンツ開始SE"
+          value={block.entrySe ?? { mode: "inherit" }}
+          projectDefault={projectContentSe}
+          assets={assets}
+          noneLabel="SEなし"
+          onChange={(value) => updateBlock((draft) => void (draft.entrySe = value))}
+        />
         <button
           className="icon danger remove-block"
           title="このコンテンツを削除"

@@ -26,6 +26,108 @@
 .asset-library {
   padding: 0 18px 18px;
 }
+.project-audio-settings {
+  padding: 0 18px 18px;
+  display: grid;
+  gap: 6px;
+}
+.audio-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8f9fb;
+}
+.audio-setting-row > label:first-child {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.audio-setting-row > label:first-child > span {
+  flex: 0 0 116px;
+  white-space: nowrap;
+}
+.audio-setting-row select {
+  min-width: 0;
+  flex: 1;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+.audio-volume {
+  flex: 0 1 170px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.audio-volume span {
+  white-space: nowrap;
+}
+.audio-volume input {
+  min-width: 70px;
+  width: 100%;
+}
+.audio-settings-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.audio-override-row {
+  margin: 0;
+}
+.scene-audio-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  background: #f8f9fb;
+}
+.scene-audio-controls > .audio-override-row {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.scene-audio-controls > .audio-override-row > label:first-child > span {
+  flex-basis: auto;
+}
+.scene-audio-controls .audio-volume {
+  flex-basis: 110px;
+}
+.wish-audio-controls {
+  margin-bottom: 10px;
+  padding-inline: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+.diary-heading > .audio-override-row,
+.asset-control > .audio-override-row {
+  flex: 1 1 320px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.diary-heading > .audio-override-row > label:first-child > span,
+.asset-control > .audio-override-row > label:first-child > span {
+  flex-basis: auto;
+}
+.diary-heading > .audio-override-row select,
+.asset-control > .audio-override-row select {
+  padding-block: 5px;
+}
 .asset-library-toolbar {
   display: flex;
   align-items: center;
@@ -74,6 +176,9 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.asset-preview audio {
+  width: calc(100% - 16px);
 }
 .asset-preview-placeholder {
   display: grid;

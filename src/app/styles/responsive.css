@@ -88,4 +88,20 @@
   .diary-heading .grow {
     flex-basis: calc(100% - 80px);
   }
+  .audio-setting-row {
+    flex-wrap: wrap;
+  }
+  .audio-setting-row > label:first-child {
+    flex-basis: 100%;
+  }
+  .audio-volume {
+    margin-left: 124px;
+  }
+  .diary-heading > .audio-override-row,
+  .asset-control > .audio-override-row {
+    flex-basis: 100%;
+  }
+  .scene-audio-controls {
+    grid-template-columns: 1fr;
+  }
 }

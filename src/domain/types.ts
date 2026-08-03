@@ -87,6 +87,36 @@ export const assetSettingsSchema = z.object({
   fadeOutSeconds: z.number().positive().nullable().default(null),
 });
 
+export const audioClipSchema = z.object({
+  assetId: z.string().uuid(),
+  url: z.string(),
+  volume: z.number().min(0).max(2).default(1),
+});
+
+export const audioOverrideSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("inherit") }),
+  z.object({ mode: z.literal("none") }),
+  z.object({ mode: z.literal("custom"), clip: audioClipSchema }),
+]);
+
+export const soundEffectOverrideSchema = audioOverrideSchema;
+
+const migrateRenamedField = (value: unknown, oldKey: string, newKey: string) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  if (record[newKey] !== undefined || record[oldKey] === undefined) return value;
+  return { ...record, [newKey]: record[oldKey] };
+};
+
+export const projectAudioSettingsSchema = z.preprocess(
+  (value) => migrateRenamedField(value, "dateSe", "sceneIntroSe"),
+  z.object({
+    bgm: audioClipSchema.nullable().default(null),
+    sceneIntroSe: audioClipSchema.nullable().default(null),
+    contentSe: audioClipSchema.nullable().default(null),
+  }),
+);
+
 export const contentBlockSchema = z.object({
   id: z.string().uuid(),
   title: z.string().default(""),
@@ -94,24 +124,33 @@ export const contentBlockSchema = z.object({
   dialogues: z.array(dialogueSchema).default([]),
   durationSeconds: z.number().positive().nullable().default(null),
   endHoldSeconds: z.number().nonnegative().nullable().default(null),
+  entrySe: soundEffectOverrideSchema.default({ mode: "inherit" }),
 });
 
-export const diaryEntrySchema = z.object({
-  id: z.string().uuid(),
-  date: z.string().date(),
-  subtitle: z.string().default(""),
-  blocks: z.array(contentBlockSchema).default([]),
-});
+export const diaryEntrySchema = z.preprocess(
+  (value) => migrateRenamedField(value, "dateSe", "sceneIntroSe"),
+  z.object({
+    id: z.string().uuid(),
+    date: z.string().date(),
+    subtitle: z.string().default(""),
+    blocks: z.array(contentBlockSchema).default([]),
+    sceneIntroSe: audioOverrideSchema.default({ mode: "inherit" }),
+    bgm: audioOverrideSchema.default({ mode: "inherit" }),
+  }),
+);
 
 export const wishListSchema = z.object({
   markdown: z.string().default("- 作りたいもの"),
   dialogues: z.array(dialogueSchema).default([]),
   durationSeconds: z.number().positive().nullable().default(null),
   endHoldSeconds: z.number().nonnegative().nullable().default(null),
+  sceneIntroSe: audioOverrideSchema.default({ mode: "inherit" }),
+  bgm: audioOverrideSchema.default({ mode: "inherit" }),
 });
 
 export const projectDocumentSchema = z.object({
   name: z.string().min(1),
+  audio: projectAudioSettingsSchema.default({ bgm: null, sceneIntroSe: null, contentSe: null }),
   characterIds: z.array(z.string().uuid()).default([]),
   characterAvatarOverrides: z
     .record(
@@ -131,6 +170,10 @@ export type VoiceSettings = z.infer<typeof voiceSettingsSchema>;
 export type Character = z.infer<typeof characterSchema>;
 export type Dialogue = z.infer<typeof dialogueSchema>;
 export type AssetSettings = z.infer<typeof assetSettingsSchema>;
+export type AudioClip = z.infer<typeof audioClipSchema>;
+export type AudioOverride = z.infer<typeof audioOverrideSchema>;
+export type SoundEffectOverride = z.infer<typeof soundEffectOverrideSchema>;
+export type ProjectAudioSettings = z.infer<typeof projectAudioSettingsSchema>;
 export type ContentBlock = z.infer<typeof contentBlockSchema>;
 export type DiaryEntry = z.infer<typeof diaryEntrySchema>;
 export type ProjectDocument = z.infer<typeof projectDocumentSchema>;

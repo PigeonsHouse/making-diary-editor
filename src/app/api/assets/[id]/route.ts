@@ -21,9 +21,37 @@ export async function DELETE(_: Request, context: Context) {
       db.select({ data: characters.data }).from(characters),
     ]);
     const usedByProjects = projectRows
-      .filter(({ document }) =>
-        document.diaries.some((diary) => diary.blocks.some((block) => block.asset?.assetId === id)),
-      )
+      .filter(({ document }) => {
+        const projectAudio = document.audio;
+        const legacyProjectAudio = projectAudio as typeof projectAudio & { dateSe?: { assetId: string } | null };
+        if (
+          projectAudio &&
+          [projectAudio.bgm, projectAudio.sceneIntroSe ?? legacyProjectAudio.dateSe, projectAudio.contentSe].some(
+            (clip) => clip?.assetId === id,
+          )
+        ) {
+          return true;
+        }
+        if (
+          document.wishList &&
+          ((document.wishList.sceneIntroSe?.mode === "custom" && document.wishList.sceneIntroSe.clip.assetId === id) ||
+            (document.wishList.bgm?.mode === "custom" && document.wishList.bgm.clip.assetId === id))
+        ) {
+          return true;
+        }
+        return document.diaries.some((diary) => {
+          const legacyDiary = diary as typeof diary & { dateSe?: typeof diary.sceneIntroSe };
+          const sceneIntroSe = diary.sceneIntroSe ?? legacyDiary.dateSe;
+          return (
+            (sceneIntroSe?.mode === "custom" && sceneIntroSe.clip.assetId === id) ||
+            (diary.bgm?.mode === "custom" && diary.bgm.clip.assetId === id) ||
+            diary.blocks.some(
+              (block) =>
+                block.asset?.assetId === id || (block.entrySe?.mode === "custom" && block.entrySe.clip.assetId === id),
+            )
+          );
+        });
+      })
       .map(({ name }) => name);
     const usedByCharacters = characterRows.filter(({ data }) => data.psdAssetId === id).map(({ data }) => data.name);
     if (usedByProjects.length || usedByCharacters.length) {

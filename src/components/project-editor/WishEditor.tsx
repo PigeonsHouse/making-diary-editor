@@ -2,17 +2,20 @@
 
 import { createDialogue } from "@/domain/defaults";
 import type { Character, ProjectDocument } from "@/domain/types";
+import { AudioOverrideEditor } from "./AudioSettings";
 import { DialogueEditor } from "./DialogueEditor";
 import { WISH_LIST_DIALOGUE_SCOPE } from "./dialogue-dnd";
-import type { UpdateProject } from "./types";
+import type { AssetRow, UpdateProject } from "./types";
 
 export function WishEditor({
   project,
   characters,
+  assets,
   update,
 }: {
   project: ProjectDocument;
   characters: Character[];
+  assets: AssetRow[];
   update: UpdateProject;
 }) {
   if (!project.wishList) {
@@ -21,7 +24,14 @@ export function WishEditor({
         className="notebook-add"
         onClick={() =>
           update((draft) => {
-            draft.wishList = { markdown: "- 作りたいもの", dialogues: [], durationSeconds: null, endHoldSeconds: null };
+            draft.wishList = {
+              markdown: "- 作りたいもの",
+              dialogues: [],
+              durationSeconds: null,
+              endHoldSeconds: null,
+              sceneIntroSe: { mode: "inherit" },
+              bgm: { mode: "inherit" },
+            };
           })
         }
       >
@@ -51,6 +61,32 @@ export function WishEditor({
         >
           ×
         </button>
+      </div>
+      <div className="scene-audio-controls wish-audio-controls">
+        <AudioOverrideEditor
+          label="シーン冒頭SE"
+          value={project.wishList.sceneIntroSe}
+          projectDefault={project.audio.sceneIntroSe}
+          assets={assets}
+          noneLabel="SEなし"
+          onChange={(value) =>
+            update((draft) => {
+              draft.wishList!.sceneIntroSe = value;
+            })
+          }
+        />
+        <AudioOverrideEditor
+          label="BGM"
+          value={project.wishList.bgm}
+          projectDefault={project.audio.bgm}
+          assets={assets}
+          noneLabel="BGMなし"
+          onChange={(value) =>
+            update((draft) => {
+              draft.wishList!.bgm = value;
+            })
+          }
+        />
       </div>
       <textarea
         value={project.wishList.markdown}

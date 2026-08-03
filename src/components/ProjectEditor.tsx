@@ -6,6 +6,7 @@ import { validateProject } from "@/domain/timeline";
 import type { Character, ProjectDocument, ProjectRecord } from "@/domain/types";
 import { VideoPreview } from "./VideoPreview";
 import { AssetLibrary } from "./project-editor/AssetLibrary";
+import { ProjectAudioSettingsEditor } from "./project-editor/AudioSettings";
 import { CastEditor } from "./project-editor/CastEditor";
 import { DiaryPanel } from "./project-editor/DiaryPanel";
 import { ProjectTabs } from "./project-editor/ProjectTabs";
@@ -227,13 +228,18 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
           {activeTab === "general" ? (
             <div id="panel-general" role="tabpanel" aria-labelledby="tab-general" className="editor-tab-panel">
               <CastEditor project={project} characters={characters} update={update} />
+              <ProjectAudioSettingsEditor
+                settings={project.audio}
+                assets={assets}
+                onChange={(recipe) => update((draft) => recipe(draft.audio))}
+              />
               <AssetLibrary assets={assets} onChanged={setAssets} />
               <RenderHistory jobs={renderJobs} isLoading={isRenderHistoryLoading} />
             </div>
           ) : null}
           {activeTab === "wish" ? (
             <div id="panel-wish" role="tabpanel" aria-labelledby="tab-wish" className="editor-tab-panel">
-              <WishEditor project={project} characters={characters} update={update} />
+              <WishEditor project={project} characters={characters} assets={assets} update={update} />
             </div>
           ) : null}
           {project.diaries.map((diary, diaryIndex) =>

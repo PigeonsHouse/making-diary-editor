@@ -37,6 +37,7 @@ export const createBlock = (): ContentBlock => ({
   dialogues: [],
   durationSeconds: 3,
   endHoldSeconds: null,
+  entrySe: { mode: "inherit" },
 });
 
 export const createDiary = (): DiaryEntry => ({
@@ -44,10 +45,13 @@ export const createDiary = (): DiaryEntry => ({
   date: new Date().toISOString().slice(0, 10),
   subtitle: "",
   blocks: [createBlock()],
+  sceneIntroSe: { mode: "inherit" },
+  bgm: { mode: "inherit" },
 });
 
 export const createProject = (name = "新しい製作日誌"): ProjectDocument => ({
   name,
+  audio: { bgm: null, sceneIntroSe: null, contentSe: null },
   characterIds: [],
   characterAvatarOverrides: {},
   wishList: null,

@@ -16,17 +16,24 @@ export async function GET(request: Request, context: Context) {
     return NextResponse.json({ error: "素材を利用できません" }, { status: 404 });
   }
   const contentType =
-    asset.kind === "video" ? "video/mp4" : asset.normalizedPath.endsWith(".png") ? "image/png" : "image/jpeg";
+    asset.kind === "video"
+      ? "video/mp4"
+      : asset.kind === "audio"
+        ? "audio/mp4"
+        : asset.normalizedPath.endsWith(".png")
+          ? "image/png"
+          : "image/jpeg";
   const fileSize = (await stat(asset.normalizedPath)).size;
   const rangeHeader = request.headers.get("range");
-  const range = asset.kind === "video" ? parseByteRange(rangeHeader, fileSize) : null;
+  const supportsRange = asset.kind === "video" || asset.kind === "audio";
+  const range = supportsRange ? parseByteRange(rangeHeader, fileSize) : null;
   const commonHeaders = {
     "content-type": contentType,
     "cache-control": "public, max-age=31536000, immutable",
     "accept-ranges": "bytes",
   };
 
-  if (asset.kind === "video" && rangeHeader && !range) {
+  if (supportsRange && rangeHeader && !range) {
     return new Response(null, {
       status: 416,
       headers: { ...commonHeaders, "content-range": `bytes */${fileSize}` },

@@ -6,6 +6,7 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 import { Worker } from "bullmq";
 import { eq } from "drizzle-orm";
 import { createDialoguePsdPreviewSpecs } from "@/domain/psd-previews";
+import { projectDocumentSchema } from "@/domain/types";
 import { db } from "@/server/db";
 import { assets, characters, renderJobs } from "@/server/db/schema";
 import { renderPsdPreview } from "@/server/psd";
@@ -31,9 +32,10 @@ async function main() {
       const renderJobId = queueJob.data.renderJobId as string;
       const [job] = await db.select().from(renderJobs).where(eq(renderJobs.id, renderJobId));
       if (!job) throw new Error("Render job not found");
+      const snapshot = projectDocumentSchema.parse(job.snapshot);
       const characterRows = await db.select().from(characters);
       const characterData = characterRows.map((row) => row.data);
-      const psdPreviewSpecs = createDialoguePsdPreviewSpecs(job.snapshot, characterData);
+      const psdPreviewSpecs = createDialoguePsdPreviewSpecs(snapshot, characterData);
       const dialoguePsdPreviewUrls: Record<string, string> = {};
       if (psdPreviewSpecs.length > 0) {
         const assetRows = await db.select().from(assets);
@@ -53,7 +55,7 @@ async function main() {
         }
       }
       const inputProps = resolveRenderAssetUrls({
-        project: job.snapshot,
+        project: snapshot,
         characters: characterData,
         dialoguePsdPreviewUrls,
       });
@@ -138,7 +140,7 @@ async function main() {
             .where(eq(assets.id, assetId));
           return;
         }
-        const extension = asset.kind === "video" ? ".mp4" : ".jpg";
+        const extension = asset.kind === "video" ? ".mp4" : asset.kind === "audio" ? ".m4a" : ".jpg";
         const output = path.join(normalizedDir, `${asset.id}${extension}`);
         const args =
           asset.kind === "video"
@@ -158,7 +160,9 @@ async function main() {
                 "+faststart",
                 output,
               ]
-            : ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-q:v", "2", output];
+            : asset.kind === "audio"
+              ? ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-vn", "-c:a", "aac", "-b:a", "192k", output]
+              : ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-q:v", "2", output];
         await execFileAsync("ffmpeg", args);
         const { stdout } = await execFileAsync("ffprobe", [
           "-v",

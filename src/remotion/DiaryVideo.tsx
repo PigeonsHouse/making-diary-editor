@@ -2,6 +2,13 @@
 
 import "@fontsource-variable/noto-sans-jp";
 import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  getBgmVolume,
+  groupContinuousBgm,
+  resolveAudioOverride,
+  resolveSoundEffect,
+  type AudioScene,
+} from "@/domain/audio";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { layoutSubtitleText } from "@/domain/subtitle-layout";
 import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
@@ -33,6 +40,7 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
       dialogues: project.wishList.dialogues,
       durationSeconds: project.wishList.durationSeconds,
       endHoldSeconds: project.wishList.endHoldSeconds,
+      entrySe: { mode: "none" },
     } satisfies ContentBlock;
     seconds += calculateBlock(block, characters).duration;
   }
@@ -48,6 +56,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
   const { fps } = useVideoConfig();
   let cursor = 0;
   const sequences: React.ReactNode[] = [];
+  const audioScenes: AudioScene[] = [];
 
   if (project.wishList) {
     const block: ContentBlock = {
@@ -57,6 +66,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
       dialogues: project.wishList.dialogues,
       durationSeconds: project.wishList.durationSeconds,
       endHoldSeconds: project.wishList.endHoldSeconds,
+      entrySe: { mode: "none" },
     };
     const timing = calculateBlock(block, characters, defaultEndHold);
     const duration = secondsToFrames(timing.duration, fps);
@@ -65,6 +75,12 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
         <WishScene project={project} characters={characters} block={block} defaultEndHold={defaultEndHold} />
       </Sequence>,
     );
+    audioScenes.push({
+      key: "wish",
+      from: cursor,
+      duration,
+      bgm: resolveAudioOverride(project.audio.bgm, project.wishList.bgm),
+    });
     cursor += duration;
   }
 
@@ -86,11 +102,42 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
         />
       </Sequence>,
     );
+    audioScenes.push({
+      key: diary.id,
+      from: cursor,
+      duration,
+      bgm: resolveAudioOverride(project.audio.bgm, diary.bgm),
+    });
     cursor += duration;
+  });
+
+  const bgmSegments = groupContinuousBgm(audioScenes);
+  const sceneIntroSoundEffects = audioScenes.map((scene) => {
+    const override =
+      scene.key === "wish"
+        ? project.wishList?.sceneIntroSe
+        : project.diaries.find((diary) => diary.id === scene.key)?.sceneIntroSe;
+    const clip = resolveAudioOverride(project.audio.sceneIntroSe, override);
+    return clip ? (
+      <Sequence key={`scene-intro-${scene.key}`} from={scene.from} durationInFrames={scene.duration}>
+        <Audio src={clip.url} volume={clip.volume} />
+      </Sequence>
+    ) : null;
   });
 
   return (
     <AbsoluteFill style={{ background: "#f4f6f8", fontFamily: '"Noto Sans JP Variable", sans-serif' }}>
+      {bgmSegments.map((segment) => (
+        <Sequence key={segment.key} from={segment.from} durationInFrames={segment.duration}>
+          <Audio
+            src={segment.clip.url}
+            volume={(frame) => getBgmVolume(segment, frame)}
+            loop
+            loopVolumeCurveBehavior="extend"
+          />
+        </Sequence>
+      ))}
+      {sceneIntroSoundEffects}
       {sequences}
     </AbsoluteFill>
   );
@@ -134,9 +181,21 @@ function DiaryScene({
     frame >= introFrames && activeBlock
       ? getStartedDialogues(activeBlock, blockLocalFrame, fps, characters, defaultEndHold)
       : [];
+  let contentSeCursor = introFrames;
+  const contentSoundEffects = diary.blocks.map((block) => {
+    const startFrame = contentSeCursor;
+    contentSeCursor += secondsToFrames(calculateBlock(block, characters, defaultEndHold).duration, fps);
+    const clip = resolveSoundEffect(project.audio.contentSe, block.entrySe);
+    return clip ? (
+      <Sequence key={`entry-se-${block.id}`} from={startFrame}>
+        <Audio src={clip.url} volume={clip.volume} />
+      </Sequence>
+    ) : null;
+  });
 
   return (
     <AbsoluteFill>
+      {contentSoundEffects}
       <AssetBackground
         block={activeBlock}
         blockStartFrame={blockCursor}
