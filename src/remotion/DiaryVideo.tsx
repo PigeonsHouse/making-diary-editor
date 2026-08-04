@@ -1,6 +1,7 @@
 "use client";
 
 import "@fontsource-variable/noto-sans-jp";
+import { useMemo } from "react";
 import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import {
   getBgmVolume,
@@ -17,6 +18,8 @@ import { AssetBackground } from "./AssetBackground";
 import { Avatars } from "./Avatars";
 import { WishMarkdown } from "./WishMarkdown";
 
+export { getVideoDuration } from "@/domain/video-duration";
+
 type Props = {
   project: ProjectDocument;
   characters: Character[];
@@ -30,100 +33,85 @@ const secondsToFrames = (seconds: number, fps: number) => {
   return Number.isSafeInteger(frames) && frames > 0 ? frames : 1;
 };
 
-export function getVideoDuration(project: ProjectDocument, characters: Character[], fps = 30) {
-  let seconds = 0;
-  if (project.wishList) {
-    const block = {
-      id: "wish",
-      title: "",
-      asset: null,
-      dialogues: project.wishList.dialogues,
-      durationSeconds: project.wishList.durationSeconds,
-      endHoldSeconds: project.wishList.endHoldSeconds,
-      entrySe: { mode: "none" },
-    } satisfies ContentBlock;
-    seconds += calculateBlock(block, characters).duration;
-  }
-  for (const diary of project.diaries) {
-    seconds += EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds;
-    seconds += diary.blocks.reduce((sum, block) => sum + calculateBlock(block, characters).duration, 0);
-  }
-  const minimumFrames = Number.isSafeInteger(fps) && fps > 0 ? fps : EDITOR_CONSTANTS.fps;
-  return Math.max(minimumFrames, secondsToFrames(seconds, fps));
-}
-
 export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPreviewUrls }: Props) {
   const { fps } = useVideoConfig();
-  let cursor = 0;
-  const sequences: React.ReactNode[] = [];
-  const audioScenes: AudioScene[] = [];
+  const { sequences, audioScenes } = useMemo(() => {
+    let cursor = 0;
+    const nextSequences: React.ReactNode[] = [];
+    const nextAudioScenes: AudioScene[] = [];
 
-  if (project.wishList) {
-    const block: ContentBlock = {
-      id: "wish",
-      title: "",
-      asset: null,
-      dialogues: project.wishList.dialogues,
-      durationSeconds: project.wishList.durationSeconds,
-      endHoldSeconds: project.wishList.endHoldSeconds,
-      entrySe: { mode: "none" },
-    };
-    const timing = calculateBlock(block, characters, defaultEndHold);
-    const duration = secondsToFrames(timing.duration, fps);
-    sequences.push(
-      <Sequence key="wish" from={cursor} durationInFrames={duration}>
-        <WishScene project={project} characters={characters} block={block} defaultEndHold={defaultEndHold} />
-      </Sequence>,
-    );
-    audioScenes.push({
-      key: "wish",
-      from: cursor,
-      duration,
-      bgm: resolveAudioOverride(project.audio.bgm, project.wishList.bgm),
+    if (project.wishList) {
+      const block: ContentBlock = {
+        id: "wish",
+        title: "",
+        asset: null,
+        dialogues: project.wishList.dialogues,
+        durationSeconds: project.wishList.durationSeconds,
+        endHoldSeconds: project.wishList.endHoldSeconds,
+        entrySe: { mode: "none" },
+      };
+      const timing = calculateBlock(block, characters, defaultEndHold);
+      const duration = secondsToFrames(timing.duration, fps);
+      nextSequences.push(
+        <Sequence key="wish" from={cursor} durationInFrames={duration}>
+          <WishScene project={project} characters={characters} block={block} defaultEndHold={defaultEndHold} />
+        </Sequence>,
+      );
+      nextAudioScenes.push({
+        key: "wish",
+        from: cursor,
+        duration,
+        bgm: resolveAudioOverride(project.audio.bgm, project.wishList.bgm),
+      });
+      cursor += duration;
+    }
+
+    project.diaries.forEach((diary) => {
+      const introSeconds = EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds;
+      const blockSeconds = diary.blocks.reduce(
+        (sum, block) => sum + calculateBlock(block, characters, defaultEndHold).duration,
+        0,
+      );
+      const duration = secondsToFrames(introSeconds + blockSeconds, fps);
+      nextSequences.push(
+        <Sequence key={diary.id} from={cursor} durationInFrames={duration}>
+          <DiaryScene
+            project={project}
+            diary={diary}
+            characters={characters}
+            defaultEndHold={defaultEndHold}
+            dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+          />
+        </Sequence>,
+      );
+      nextAudioScenes.push({
+        key: diary.id,
+        from: cursor,
+        duration,
+        bgm: resolveAudioOverride(project.audio.bgm, diary.bgm),
+      });
+      cursor += duration;
     });
-    cursor += duration;
-  }
+    return { sequences: nextSequences, audioScenes: nextAudioScenes };
+  }, [characters, defaultEndHold, dialoguePsdPreviewUrls, fps, project]);
 
-  project.diaries.forEach((diary) => {
-    const introSeconds = EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds;
-    const blockSeconds = diary.blocks.reduce(
-      (sum, block) => sum + calculateBlock(block, characters, defaultEndHold).duration,
-      0,
-    );
-    const duration = secondsToFrames(introSeconds + blockSeconds, fps);
-    sequences.push(
-      <Sequence key={diary.id} from={cursor} durationInFrames={duration}>
-        <DiaryScene
-          project={project}
-          diary={diary}
-          characters={characters}
-          defaultEndHold={defaultEndHold}
-          dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
-        />
-      </Sequence>,
-    );
-    audioScenes.push({
-      key: diary.id,
-      from: cursor,
-      duration,
-      bgm: resolveAudioOverride(project.audio.bgm, diary.bgm),
-    });
-    cursor += duration;
-  });
-
-  const bgmSegments = groupContinuousBgm(audioScenes);
-  const sceneIntroSoundEffects = audioScenes.map((scene) => {
-    const override =
-      scene.key === "wish"
-        ? project.wishList?.sceneIntroSe
-        : project.diaries.find((diary) => diary.id === scene.key)?.sceneIntroSe;
-    const clip = resolveAudioOverride(project.audio.sceneIntroSe, override);
-    return clip ? (
-      <Sequence key={`scene-intro-${scene.key}`} from={scene.from} durationInFrames={scene.duration}>
-        <Audio src={clip.url} volume={clip.volume} />
-      </Sequence>
-    ) : null;
-  });
+  const bgmSegments = useMemo(() => groupContinuousBgm(audioScenes), [audioScenes]);
+  const sceneIntroSoundEffects = useMemo(
+    () =>
+      audioScenes.map((scene) => {
+        const override =
+          scene.key === "wish"
+            ? project.wishList?.sceneIntroSe
+            : project.diaries.find((diary) => diary.id === scene.key)?.sceneIntroSe;
+        const clip = resolveAudioOverride(project.audio.sceneIntroSe, override);
+        return clip ? (
+          <Sequence key={`scene-intro-${scene.key}`} from={scene.from} durationInFrames={scene.duration}>
+            <Audio src={clip.url} volume={clip.volume} />
+          </Sequence>
+        ) : null;
+      }),
+    [audioScenes, project],
+  );
 
   return (
     <AbsoluteFill style={{ background: "#f4f6f8", fontFamily: '"Noto Sans JP Variable", sans-serif' }}>
@@ -153,45 +141,51 @@ function DiaryScene({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const introFrames = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds, fps);
-  let blockCursor = introFrames;
-  let activeBlock = diary.blocks[0];
-  let blockLocalFrame = frame;
-  let activeBlockDurationSeconds = activeBlock ? calculateBlock(activeBlock, characters, defaultEndHold).duration : 0;
-  for (const block of diary.blocks) {
-    const durationSeconds = calculateBlock(block, characters, defaultEndHold).duration;
-    const duration = secondsToFrames(durationSeconds, fps);
-    if (frame >= blockCursor && frame < blockCursor + duration) {
-      activeBlock = block;
-      blockLocalFrame = frame - blockCursor;
-      activeBlockDurationSeconds = durationSeconds;
-      break;
-    }
-    blockCursor += duration;
-  }
+  const blockTimeline = useMemo(() => {
+    let cursor = introFrames;
+    return diary.blocks.map((block) => {
+      const timing = calculateBlock(block, characters, defaultEndHold);
+      const durationInFrames = secondsToFrames(timing.duration, fps);
+      const entry = { block, timing, from: cursor, durationInFrames };
+      cursor += durationInFrames;
+      return entry;
+    });
+  }, [characters, defaultEndHold, diary.blocks, fps, introFrames]);
+  const activeEntry =
+    blockTimeline.find((entry) => frame >= entry.from && frame < entry.from + entry.durationInFrames) ??
+    blockTimeline[0];
+  const activeBlock = activeEntry?.block;
+  const blockCursor = activeEntry?.from ?? introFrames;
+  const blockLocalFrame = frame - blockCursor;
+  const activeBlockDurationSeconds = activeEntry?.timing.duration ?? 0;
   const centerEnd = secondsToFrames(EDITOR_CONSTANTS.dateCenterSeconds, fps);
   const fade =
     frame < introFrames
       ? interpolate(frame, [centerEnd, introFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
       : 1;
+  const blockSeconds = blockLocalFrame / fps;
   const activeDialogues =
-    frame >= introFrames && activeBlock
-      ? getVisibleDialogues(activeBlock, blockLocalFrame, fps, characters, defaultEndHold)
+    frame >= introFrames && activeEntry
+      ? activeEntry.timing.dialogues
+          .filter((item) => blockSeconds >= item.start && blockSeconds <= item.displayEnd)
+          .map((item) => item.dialogue)
       : [];
   const startedDialogues =
-    frame >= introFrames && activeBlock
-      ? getStartedDialogues(activeBlock, blockLocalFrame, fps, characters, defaultEndHold)
+    frame >= introFrames && activeEntry
+      ? activeEntry.timing.dialogues.filter((item) => blockSeconds >= item.start).map((item) => item.dialogue)
       : [];
-  let contentSeCursor = introFrames;
-  const contentSoundEffects = diary.blocks.map((block) => {
-    const startFrame = contentSeCursor;
-    contentSeCursor += secondsToFrames(calculateBlock(block, characters, defaultEndHold).duration, fps);
-    const clip = resolveSoundEffect(project.audio.contentSe, block.entrySe);
-    return clip ? (
-      <Sequence key={`entry-se-${block.id}`} from={startFrame}>
-        <Audio src={clip.url} volume={clip.volume} />
-      </Sequence>
-    ) : null;
-  });
+  const contentSoundEffects = useMemo(
+    () =>
+      blockTimeline.map(({ block, from }) => {
+        const clip = resolveSoundEffect(project.audio.contentSe, block.entrySe);
+        return clip ? (
+          <Sequence key={`entry-se-${block.id}`} from={from}>
+            <Audio src={clip.url} volume={clip.volume} />
+          </Sequence>
+        ) : null;
+      }),
+    [blockTimeline, project.audio.contentSe],
+  );
 
   return (
     <AbsoluteFill>
@@ -228,6 +222,7 @@ function DiaryScene({
           blockStartFrame={blockCursor}
           characters={characters}
           defaultEndHold={defaultEndHold}
+          timing={activeEntry.timing}
         />
       ) : null}
     </AbsoluteFill>
@@ -240,16 +235,21 @@ function DialogueLayer({
   blockStartFrame,
   characters,
   defaultEndHold,
+  timing: providedTiming,
 }: {
   block: ContentBlock;
   localFrame: number;
   blockStartFrame: number;
   characters: Character[];
   defaultEndHold?: number;
+  timing?: ReturnType<typeof calculateBlock>;
 }) {
   const { fps } = useVideoConfig();
   const seconds = localFrame / fps;
-  const timing = calculateBlock(block, characters, defaultEndHold);
+  const timing = useMemo(
+    () => providedTiming ?? calculateBlock(block, characters, defaultEndHold),
+    [block, characters, defaultEndHold, providedTiming],
+  );
   const visible = timing.dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd);
   return (
     <>
@@ -289,32 +289,6 @@ function DialogueLayer({
       </div>
     </>
   );
-}
-
-function getVisibleDialogues(
-  block: ContentBlock,
-  localFrame: number,
-  fps: number,
-  characters: Character[],
-  defaultEndHold?: number,
-) {
-  const seconds = localFrame / fps;
-  return calculateBlock(block, characters, defaultEndHold)
-    .dialogues.filter((item) => seconds >= item.start && seconds <= item.displayEnd)
-    .map((item) => item.dialogue);
-}
-
-function getStartedDialogues(
-  block: ContentBlock,
-  localFrame: number,
-  fps: number,
-  characters: Character[],
-  defaultEndHold?: number,
-) {
-  const seconds = localFrame / fps;
-  return calculateBlock(block, characters, defaultEndHold)
-    .dialogues.filter((item) => seconds >= item.start)
-    .map((item) => item.dialogue);
 }
 
 function WishScene({ project, characters, block, defaultEndHold }: Props & { block: ContentBlock }) {

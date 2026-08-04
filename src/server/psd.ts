@@ -61,11 +61,12 @@ export async function renderPsdPreview(
   filters: PsdFilters,
   selections: Record<string, string>,
   outputDir: string,
+  sourceFingerprint?: string,
 ) {
-  const source = await readFile(filePath);
+  const sourceForHash = sourceFingerprint ? Buffer.from(sourceFingerprint) : await readFile(filePath);
   const hash = createHash("sha256")
     .update(PSD_RENDER_VERSION)
-    .update(source)
+    .update(sourceForHash)
     .update(JSON.stringify({ filters, selections }))
     .digest("hex");
   const outputPath = path.join(outputDir, `${hash}.png`);
@@ -75,6 +76,7 @@ export async function renderPsdPreview(
   } catch {
     // キャッシュがない組み合わせだけPSDを合成する。
   }
+  const source = sourceFingerprint ? await readFile(filePath) : sourceForHash;
   const psd = readPsd(source, {
     skipCompositeImageData: true,
     skipThumbnail: true,

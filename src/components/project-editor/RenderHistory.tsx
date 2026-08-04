@@ -12,8 +12,10 @@ const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
 const statusLabels: Record<RenderJobSummary["status"], string> = {
   queued: "待機中",
   rendering: "レンダリング中",
+  cancelling: "中断中",
   completed: "完了",
   failed: "失敗",
+  cancelled: "中断",
 };
 
 function formatDate(value: string) {
@@ -29,7 +31,17 @@ export function RenderDownloadLink({ job, compact = false }: { job: RenderJobSum
   );
 }
 
-export function RenderHistory({ jobs, isLoading }: { jobs: RenderJobSummary[]; isLoading: boolean }) {
+export function RenderHistory({
+  jobs,
+  isLoading,
+  cancellingId,
+  onCancel,
+}: {
+  jobs: RenderJobSummary[];
+  isLoading: boolean;
+  cancellingId: string | null;
+  onCancel: (jobId: string) => void;
+}) {
   return (
     <details className="render-history">
       <summary>
@@ -43,7 +55,7 @@ export function RenderHistory({ jobs, isLoading }: { jobs: RenderJobSummary[]; i
             <div className="render-history-main">
               <div>
                 <span className={`render-status ${job.status}`}>{statusLabels[job.status]}</span>
-                {job.status === "queued" || job.status === "rendering" ? (
+                {job.status === "queued" || job.status === "rendering" || job.status === "cancelling" ? (
                   <span className="render-progress">{job.progress}%</span>
                 ) : null}
               </div>
@@ -51,6 +63,15 @@ export function RenderHistory({ jobs, isLoading }: { jobs: RenderJobSummary[]; i
               {job.status === "failed" && job.error ? <p>{job.error}</p> : null}
             </div>
             {job.status === "completed" ? <RenderDownloadLink job={job} compact /> : null}
+            {job.status === "queued" || job.status === "rendering" ? (
+              <button
+                className="secondary render-cancel"
+                disabled={cancellingId !== null}
+                onClick={() => onCancel(job.id)}
+              >
+                {cancellingId === job.id ? "中断中…" : "中断"}
+              </button>
+            ) : null}
           </div>
         ))}
       </div>

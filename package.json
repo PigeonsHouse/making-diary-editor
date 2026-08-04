@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:push": "drizzle-kit push",
-    "worker": "tsx src/worker/index.ts"
+    "worker": "tsx src/worker/index.ts",
+    "worker:bundle": "tsx src/worker/build-remotion-bundle.ts"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-jp": "5.2.10",

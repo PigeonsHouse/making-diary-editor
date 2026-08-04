@@ -57,7 +57,13 @@ export async function POST(request: Request, context: Context) {
       )
       .parse(body.filters);
     const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
-    const hash = await renderPsdPreview(asset.originalPath, filters, selections, path.join(dataDir, "psd-previews"));
+    const hash = await renderPsdPreview(
+      asset.originalPath,
+      filters,
+      selections,
+      path.join(dataDir, "psd-previews"),
+      asset.id,
+    );
     return NextResponse.json({ url: `/api/files/psd/${hash}.png` });
   } catch (error) {
     return NextResponse.json(

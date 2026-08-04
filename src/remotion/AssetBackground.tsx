@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { AbsoluteFill, Freeze, Img, Loop, OffthreadVideo, Sequence, interpolate, useCurrentFrame } from "remotion";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import type { AssetSettings, ContentBlock } from "@/domain/types";
@@ -76,8 +77,14 @@ function VideoAsset({
   style: React.CSSProperties;
 }) {
   const frame = useCurrentFrame();
-  const timing = getVideoAssetTiming(asset, blockDurationSeconds, EDITOR_CONSTANTS.fps);
-  const playbackRateError = getVideoPlaybackRateError(asset, blockDurationSeconds, EDITOR_CONSTANTS.fps);
+  const timing = useMemo(
+    () => getVideoAssetTiming(asset, blockDurationSeconds, EDITOR_CONSTANTS.fps),
+    [asset, blockDurationSeconds],
+  );
+  const playbackRateError = useMemo(
+    () => getVideoPlaybackRateError(asset, blockDurationSeconds, EDITOR_CONSTANTS.fps),
+    [asset, blockDurationSeconds],
+  );
   if (playbackRateError) {
     return (
       <div

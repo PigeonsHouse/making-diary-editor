@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Img } from "remotion";
 import { calculateAvatarPositions, isAvatarFlipped } from "@/domain/avatar-layout";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
@@ -17,18 +18,22 @@ export function Avatars({
   startedDialogues: Dialogue[];
   dialoguePsdPreviewUrls?: Record<string, string>;
 }) {
-  const selected = project.characterIds
-    .map((id) => characters.find((character) => character.id === id))
-    .filter(Boolean) as Character[];
-  const positions = calculateAvatarPositions(
-    selected.map((character) => ({
-      id: character.id,
-      edgeOffsetXPx: character.avatar.edgeOffsetXPx,
-      peekYPx: character.avatar.peekYPx,
-    })),
-    project.characterAvatarOverrides,
-    EDITOR_CONSTANTS.height * 0.77,
-  );
+  const { selected, positions } = useMemo(() => {
+    const charactersById = new Map(characters.map((character) => [character.id, character]));
+    const nextSelected = project.characterIds.map((id) => charactersById.get(id)).filter(Boolean) as Character[];
+    return {
+      selected: nextSelected,
+      positions: calculateAvatarPositions(
+        nextSelected.map((character) => ({
+          id: character.id,
+          edgeOffsetXPx: character.avatar.edgeOffsetXPx,
+          peekYPx: character.avatar.peekYPx,
+        })),
+        project.characterAvatarOverrides,
+        EDITOR_CONSTANTS.height * 0.77,
+      ),
+    };
+  }, [characters, project.characterAvatarOverrides, project.characterIds]);
 
   return (
     <>

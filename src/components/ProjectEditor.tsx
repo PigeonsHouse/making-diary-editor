@@ -32,10 +32,13 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
     jobs: renderJobs,
     isLoading: isRenderHistoryLoading,
     isStarting: isRenderStarting,
+    cancellingId,
     hasActiveRender,
+    activeJob,
     latestCompletedJob,
     statusText: renderState,
     startRender,
+    cancelRender,
   } = useRenderJobs(projectId);
   useNavigationGuard(
     hasPendingSave,
@@ -206,6 +209,15 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
         >
           レンダリング
         </button>
+        {activeJob ? (
+          <button
+            className="secondary render-cancel"
+            disabled={cancellingId !== null || activeJob.status === "cancelling"}
+            onClick={() => void cancelRender(activeJob.id)}
+          >
+            {cancellingId === activeJob.id || activeJob.status === "cancelling" ? "中断中…" : "中断"}
+          </button>
+        ) : null}
         {latestCompletedJob ? <RenderDownloadLink job={latestCompletedJob} /> : null}
         {renderState ? <span className="render-state">{renderState}</span> : null}
       </div>
@@ -234,7 +246,12 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
                 onChange={(recipe) => update((draft) => recipe(draft.audio))}
               />
               <AssetLibrary assets={assets} onChanged={setAssets} />
-              <RenderHistory jobs={renderJobs} isLoading={isRenderHistoryLoading} />
+              <RenderHistory
+                jobs={renderJobs}
+                isLoading={isRenderHistoryLoading}
+                cancellingId={cancellingId}
+                onCancel={(jobId) => void cancelRender(jobId)}
+              />
             </div>
           ) : null}
           {activeTab === "wish" ? (

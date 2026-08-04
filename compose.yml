@@ -12,6 +12,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       DATA_DIR: /data
+      RENDER_CACHE_VERSION: ${RENDER_CACHE_VERSION:-diary-video-h264-crf15-v2}
     volumes:
       - diary-data:/data
     networks:
@@ -34,6 +35,14 @@ services:
       DATA_DIR: /data
       CHROMIUM_PATH: /usr/bin/chromium
       APP_URL: http://diary-web:3000
+      RENDER_CACHE_VERSION: ${RENDER_CACHE_VERSION:-diary-video-h264-crf15-v2}
+      RENDER_CONCURRENCY: ${RENDER_CONCURRENCY:-auto}
+      RENDER_X264_PRESET: ${RENDER_X264_PRESET:-veryfast}
+      RENDER_MEDIA_CACHE_MB: ${RENDER_MEDIA_CACHE_MB:-1024}
+      RENDER_OFFTHREAD_VIDEO_THREADS: ${RENDER_OFFTHREAD_VIDEO_THREADS:-4}
+      RENDER_PSD_CONCURRENCY: ${RENDER_PSD_CONCURRENCY:-2}
+      RENDER_PROGRESS_INTERVAL_MS: ${RENDER_PROGRESS_INTERVAL_MS:-750}
+    shm_size: "2gb"
     volumes:
       - diary-data:/data
     depends_on:

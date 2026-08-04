@@ -1,4 +1,5 @@
 import path from "node:path";
+import { access } from "node:fs/promises";
 import { bundle, type WebpackConfiguration } from "@remotion/bundler";
 
 export function configureRemotionWebpack(config: WebpackConfiguration): WebpackConfiguration {
@@ -20,4 +21,16 @@ export function bundleRemotion(outDir?: string) {
     webpackOverride: configureRemotionWebpack,
     ...(outDir ? { outDir } : {}),
   });
+}
+
+export async function getRemotionServeUrl(prebuiltDir = process.env.REMOTION_BUNDLE_DIR) {
+  if (prebuiltDir) {
+    try {
+      await access(path.join(prebuiltDir, "index.html"));
+      return prebuiltDir;
+    } catch {
+      // 開発環境など、事前バンドルがない場合だけ実行時に生成する。
+    }
+  }
+  return bundleRemotion();
 }

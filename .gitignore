@@ -1,6 +1,7 @@
 node_modules
 .next
 out
+.remotion-bundle
 .env
 .env.local
 data

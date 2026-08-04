@@ -1,30 +1,56 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, unlink } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
-import { renderMedia, selectComposition } from "@remotion/renderer";
+import { makeCancelSignal, openBrowser, renderMedia } from "@remotion/renderer";
 import { Worker } from "bullmq";
-import { eq } from "drizzle-orm";
-import { createDialoguePsdPreviewSpecs } from "@/domain/psd-previews";
-import { projectDocumentSchema } from "@/domain/types";
+import { and, eq, inArray } from "drizzle-orm";
+import { EDITOR_CONSTANTS } from "@/domain/defaults";
+import { characterSchema, projectDocumentSchema } from "@/domain/types";
+import { getVideoDuration } from "@/domain/video-duration";
 import { db } from "@/server/db";
-import { assets, characters, renderJobs } from "@/server/db/schema";
-import { renderPsdPreview } from "@/server/psd";
+import { assets, characters, projects, renderJobs } from "@/server/db/schema";
 import { redis } from "@/server/queue";
-import { bundleRemotion } from "./remotion-bundler";
+import { createRenderSignature, saveCachedRender } from "@/server/render-cache";
+import {
+  clearRenderCancellation,
+  isRenderCancellationRequested,
+  watchRenderCancellation,
+} from "@/server/render-cancellation";
+import {
+  getProgressIntervalMs,
+  getOffthreadVideoThreads,
+  getRenderConcurrency,
+  getRenderMediaCacheSize,
+  getX264Preset,
+} from "./render-config";
 import { resolveRenderAssetUrls } from "./render-input";
+import { getRemotionServeUrl } from "./remotion-bundler";
+import { createProgressReporter } from "./render-progress";
+import { prepareDialoguePsdPreviews } from "./prepare-psd";
 
 const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const rendersDir = path.join(dataDir, "renders");
 
 let serveUrlPromise: Promise<string> | null = null;
 const getServeUrl = () => {
-  serveUrlPromise ??= bundleRemotion();
+  serveUrlPromise ??= getRemotionServeUrl();
   return serveUrlPromise;
+};
+
+let browserPromise: ReturnType<typeof openBrowser> | null = null;
+const getBrowser = () => {
+  browserPromise ??= openBrowser("chrome", { browserExecutable: process.env.CHROMIUM_PATH });
+  return browserPromise;
 };
 
 async function main() {
   await mkdir(rendersDir, { recursive: true });
+  const runtimeWarmup = Promise.all([getServeUrl(), getBrowser()]);
+  void runtimeWarmup.then(
+    () => console.log("Remotion bundle and Chromium warmed up"),
+    (error) => console.error("Failed to warm up Remotion runtime", error),
+  );
 
   new Worker(
     "renders",
@@ -32,46 +58,94 @@ async function main() {
       const renderJobId = queueJob.data.renderJobId as string;
       const [job] = await db.select().from(renderJobs).where(eq(renderJobs.id, renderJobId));
       if (!job) throw new Error("Render job not found");
-      const snapshot = projectDocumentSchema.parse(job.snapshot);
-      const characterRows = await db.select().from(characters);
-      const characterData = characterRows.map((row) => row.data);
-      const psdPreviewSpecs = createDialoguePsdPreviewSpecs(snapshot, characterData);
-      const dialoguePsdPreviewUrls: Record<string, string> = {};
-      if (psdPreviewSpecs.length > 0) {
-        const assetRows = await db.select().from(assets);
-        const assetsById = new Map(assetRows.map((asset) => [asset.id, asset]));
-        for (const spec of psdPreviewSpecs) {
-          const asset = assetsById.get(spec.assetId);
-          if (!asset) continue;
-          const hash = await renderPsdPreview(
-            asset.originalPath,
-            spec.filters,
-            spec.selections,
-            path.join(dataDir, "psd-previews"),
-          );
-          for (const dialogueId of spec.dialogueIds) {
-            dialoguePsdPreviewUrls[dialogueId] = `/api/files/psd/${hash}.png`;
-          }
-        }
-      }
-      const inputProps = resolveRenderAssetUrls({
-        project: snapshot,
-        characters: characterData,
-        dialoguePsdPreviewUrls,
-      });
+      const startedAt = performance.now();
       const outputPath = path.join(rendersDir, `${renderJobId}.mp4`);
+      const { cancelSignal, cancel } = makeCancelSignal();
+      let cancellationObserved = false;
+      const stopWatchingCancellation = watchRenderCancellation(renderJobId, () => {
+        cancellationObserved = true;
+        cancel();
+      });
+      const throwIfCancellationRequested = async () => {
+        if (cancellationObserved || (await isRenderCancellationRequested(renderJobId))) {
+          cancellationObserved = true;
+          cancel();
+          throw new Error("Render cancellation requested");
+        }
+      };
       try {
-        await db
+        const [started] = await db
           .update(renderJobs)
-          .set({ status: "rendering", updatedAt: new Date() })
-          .where(eq(renderJobs.id, renderJobId));
-        const serveUrl = await getServeUrl();
-        const composition = await selectComposition({
-          serveUrl,
-          id: "DiaryVideo",
-          inputProps,
-          browserExecutable: process.env.CHROMIUM_PATH,
+          .set({ status: "rendering", progress: 0, error: null, updatedAt: new Date() })
+          .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "queued")))
+          .returning({ id: renderJobs.id });
+        // キューから取り出す直前に中断されたジョブは実行しない。
+        if (!started) {
+          await db
+            .update(renderJobs)
+            .set({ status: "cancelled", error: null, updatedAt: new Date() })
+            .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "cancelling")));
+          return;
+        }
+        await throwIfCancellationRequested();
+        const snapshot = projectDocumentSchema.parse(job.snapshot);
+        const queuedCharacters = characterSchema.array().safeParse(queueJob.data.characterData);
+        const characterData = queuedCharacters.success
+          ? queuedCharacters.data
+          : (await db.select().from(characters)).map((row) => row.data);
+        const renderSignature =
+          typeof queueJob.data.renderSignature === "string"
+            ? queueJob.data.renderSignature
+            : createRenderSignature(snapshot, characterData);
+
+        const psdStartedAt = performance.now();
+        const dialoguePsdPreviewUrls = await prepareDialoguePsdPreviews(snapshot, characterData, dataDir);
+        console.log(`[render:${renderJobId}] PSD preparation ${Math.round(performance.now() - psdStartedAt)}ms`);
+        await throwIfCancellationRequested();
+
+        const inputProps = resolveRenderAssetUrls({
+          project: snapshot,
+          characters: characterData,
+          dialoguePsdPreviewUrls,
         });
+        const [serveUrl, browser] = await runtimeWarmup;
+        await throwIfCancellationRequested();
+        const composition = {
+          id: "DiaryVideo",
+          width: EDITOR_CONSTANTS.width,
+          height: EDITOR_CONSTANTS.height,
+          fps: EDITOR_CONSTANTS.fps,
+          durationInFrames: getVideoDuration(snapshot, characterData),
+          defaultProps: {},
+          props: inputProps,
+          defaultCodec: null,
+          defaultOutName: null,
+          defaultVideoImageFormat: null,
+          defaultPixelFormat: null,
+          defaultProResProfile: null,
+          defaultSampleRate: null,
+        } as const;
+        const progressReporter = createProgressReporter({
+          intervalMs: getProgressIntervalMs(),
+          persist: async (percent) => {
+            await Promise.all([
+              queueJob.updateProgress(percent),
+              db
+                .update(renderJobs)
+                .set({ progress: percent, updatedAt: new Date() })
+                .where(eq(renderJobs.id, renderJobId)),
+            ]);
+          },
+        });
+        const mediaCacheSizeInBytes = getRenderMediaCacheSize();
+        const renderConcurrency = getRenderConcurrency();
+        const x264Preset = getX264Preset();
+        const offthreadVideoThreads = getOffthreadVideoThreads();
+        console.log(
+          `[render:${renderJobId}] ${composition.durationInFrames} frames, concurrency=${renderConcurrency}, ` +
+            `x264=${x264Preset}, offthreadVideoThreads=${offthreadVideoThreads}`,
+        );
+        const mediaStartedAt = performance.now();
         await renderMedia({
           serveUrl,
           composition,
@@ -81,19 +155,23 @@ async function main() {
           pixelFormat: "yuv420p",
           colorSpace: "bt709",
           crf: 15,
+          x264Preset,
+          concurrency: renderConcurrency,
+          mediaCacheSizeInBytes,
+          offthreadVideoCacheSizeInBytes: mediaCacheSizeInBytes,
+          offthreadVideoThreads,
           outputLocation: outputPath,
           inputProps,
+          cancelSignal,
+          puppeteerInstance: browser,
           browserExecutable: process.env.CHROMIUM_PATH,
-          onProgress: async ({ progress }) => {
-            const percent = Math.round(progress * 100);
-            await queueJob.updateProgress(percent);
-            await db
-              .update(renderJobs)
-              .set({ progress: percent, updatedAt: new Date() })
-              .where(eq(renderJobs.id, renderJobId));
-          },
+          onProgress: ({ progress }) => progressReporter.report(progress),
         });
-        await db
+        await throwIfCancellationRequested();
+        progressReporter.report(1);
+        await progressReporter.flush();
+        console.log(`[render:${renderJobId}] media rendering ${Math.round(performance.now() - mediaStartedAt)}ms`);
+        const [completed] = await db
           .update(renderJobs)
           .set({
             status: "completed",
@@ -101,8 +179,38 @@ async function main() {
             outputPath,
             updatedAt: new Date(),
           })
-          .where(eq(renderJobs.id, renderJobId));
+          .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "rendering")))
+          .returning({ id: renderJobs.id });
+        if (!completed) {
+          await unlink(outputPath).catch((error: NodeJS.ErrnoException) => {
+            if (error.code !== "ENOENT") throw error;
+          });
+          await db
+            .update(renderJobs)
+            .set({ status: "cancelled", error: null, updatedAt: new Date() })
+            .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "cancelling")));
+          return;
+        }
+        await saveCachedRender(renderSignature, { jobId: renderJobId, outputPath }).catch((error) =>
+          console.error(`[render:${renderJobId}] Failed to save render cache`, error),
+        );
+        console.log(`[render:${renderJobId}] completed in ${Math.round(performance.now() - startedAt)}ms`);
       } catch (error) {
+        const wasCancelled = cancellationObserved || (await isRenderCancellationRequested(renderJobId));
+        if (wasCancelled) {
+          await unlink(outputPath).catch((unlinkError: NodeJS.ErrnoException) => {
+            if (unlinkError.code !== "ENOENT")
+              console.error(`[render:${renderJobId}] Failed to remove partial output`, unlinkError);
+          });
+          await db
+            .update(renderJobs)
+            .set({ status: "cancelled", error: null, updatedAt: new Date() })
+            .where(
+              and(eq(renderJobs.id, renderJobId), inArray(renderJobs.status, ["queued", "rendering", "cancelling"])),
+            );
+          console.log(`[render:${renderJobId}] cancelled`);
+          return;
+        }
         await db
           .update(renderJobs)
           .set({
@@ -110,8 +218,13 @@ async function main() {
             error: error instanceof Error ? error.message : String(error),
             updatedAt: new Date(),
           })
-          .where(eq(renderJobs.id, renderJobId));
+          .where(and(eq(renderJobs.id, renderJobId), inArray(renderJobs.status, ["queued", "rendering"])));
         throw error;
+      } finally {
+        stopWatchingCancellation();
+        await clearRenderCancellation(renderJobId).catch((error) =>
+          console.error(`[render:${renderJobId}] Failed to clear cancellation`, error),
+        );
       }
     },
     { connection: redis, concurrency: 1 },
@@ -126,6 +239,20 @@ async function main() {
   new Worker(
     "assets",
     async (queueJob) => {
+      if (queueJob.name === "prepare-project-psd") {
+        const projectId = queueJob.data.projectId as string;
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+        if (!project) return;
+        const snapshot = projectDocumentSchema.parse(project.document);
+        const selectedIds = new Set(snapshot.characterIds);
+        const characterData = (await db.select().from(characters))
+          .map((row) => row.data)
+          .filter((character) => selectedIds.has(character.id));
+        const startedAt = performance.now();
+        await prepareDialoguePsdPreviews(snapshot, characterData, dataDir);
+        console.log(`[prepare:${projectId}] PSD previews ready in ${Math.round(performance.now() - startedAt)}ms`);
+        return;
+      }
       const assetId = queueJob.data.assetId as string;
       const [asset] = await db.select().from(assets).where(eq(assets.id, assetId));
       if (!asset) throw new Error("Asset not found");

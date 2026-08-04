@@ -136,6 +136,22 @@
   color: #9a3040;
   background: #ffe5e9;
 }
+.render-status.cancelled {
+  color: #6f5960;
+  background: #f0e9eb;
+}
+.render-status.cancelling {
+  color: #8a5b19;
+  background: #fff0d5;
+}
+.render-cancel {
+  flex: none;
+  color: var(--danger);
+}
+.render-history-row .render-cancel {
+  padding: 7px 10px;
+  font-size: 11px;
+}
 .render-progress {
   margin-left: 7px;
   color: var(--muted);

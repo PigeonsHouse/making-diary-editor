@@ -44,6 +44,9 @@
   .editor-topbar .primary {
     display: none;
   }
+  .editor-topbar .render-cancel {
+    display: inline-block;
+  }
   .editor-tabs-toolbar {
     align-items: stretch;
     flex-direction: column-reverse;

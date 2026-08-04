@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export type RenderJobStatus = "queued" | "rendering" | "completed" | "failed";
+export type RenderJobStatus = "queued" | "rendering" | "cancelling" | "completed" | "failed" | "cancelled";
 
 export type RenderJobSummary = {
   id: string;
@@ -14,7 +14,8 @@ export type RenderJobSummary = {
   updatedAt: string;
 };
 
-const isActive = (job: RenderJobSummary) => job.status === "queued" || job.status === "rendering";
+const isActive = (job: RenderJobSummary) =>
+  job.status === "queued" || job.status === "rendering" || job.status === "cancelling";
 
 const sortNewestFirst = (jobs: RenderJobSummary[]) =>
   [...jobs].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
@@ -25,10 +26,14 @@ export function getRenderStatusText(job: RenderJobSummary) {
       return `待機中 ${job.progress}%`;
     case "rendering":
       return `レンダリング中 ${job.progress}%`;
+    case "cancelling":
+      return "中断処理中…";
     case "completed":
       return "完成しました";
     case "failed":
       return `失敗: ${job.error ?? "原因を取得できませんでした"}`;
+    case "cancelled":
+      return "中断しました";
   }
 }
 
@@ -36,6 +41,7 @@ export function useRenderJobs(projectId: string) {
   const [jobs, setJobs] = useState<RenderJobSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState("");
   const eventsRef = useRef<EventSource | null>(null);
 
@@ -75,7 +81,7 @@ export function useRenderJobs(projectId: string) {
           return;
         }
         updateJob(job);
-        if (job.status === "completed" || job.status === "failed") {
+        if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
           events.close();
           eventsRef.current = null;
           void refresh();
@@ -95,6 +101,7 @@ export function useRenderJobs(projectId: string) {
   }, [refresh]);
 
   const hasActiveRender = useMemo(() => jobs.some(isActive), [jobs]);
+  const activeJob = useMemo(() => jobs.find(isActive) ?? null, [jobs]);
 
   useEffect(() => {
     if (!hasActiveRender) return;
@@ -119,8 +126,12 @@ export function useRenderJobs(projectId: string) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ projectId }),
       });
-      const body = (await response.json()) as RenderJobSummary & { error?: string };
+      const body = (await response.json()) as RenderJobSummary & {
+        error?: string;
+        job?: RenderJobSummary;
+      };
       if (!response.ok) {
+        if (body.job) updateJob(body.job);
         setRequestError(body.error ?? "レンダリングを開始できませんでした");
         return;
       }
@@ -133,17 +144,55 @@ export function useRenderJobs(projectId: string) {
     }
   }, [hasActiveRender, isStarting, monitor, projectId, updateJob]);
 
+  const cancelRender = useCallback(
+    async (jobId: string) => {
+      if (cancellingId) return;
+      setCancellingId(jobId);
+      setRequestError("");
+      try {
+        const response = await fetch(`/api/render/${jobId}`, { method: "DELETE" });
+        const body = (await response.json()) as RenderJobSummary & {
+          error?: string;
+          job?: RenderJobSummary;
+        };
+        if (!response.ok) {
+          if (body.job) updateJob(body.job);
+          setRequestError(body.error ?? "レンダリングを中断できませんでした");
+          return;
+        }
+        updateJob(body);
+        if (body.status === "cancelled") {
+          eventsRef.current?.close();
+          eventsRef.current = null;
+          await refresh();
+        }
+      } catch {
+        setRequestError("レンダリングを中断できませんでした");
+      } finally {
+        setCancellingId(null);
+      }
+    },
+    [cancellingId, refresh, updateJob],
+  );
+
   const latestJob = jobs[0] ?? null;
   const latestCompletedJob = jobs.find((job) => job.status === "completed") ?? null;
-  const statusText = isStarting ? "キューへ追加中…" : requestError || (latestJob ? getRenderStatusText(latestJob) : "");
+  const statusText = isStarting
+    ? "キューへ追加中…"
+    : cancellingId
+      ? "中断処理中…"
+      : requestError || (latestJob ? getRenderStatusText(latestJob) : "");
 
   return {
     jobs,
     isLoading,
     isStarting,
+    cancellingId,
     hasActiveRender,
+    activeJob,
     latestCompletedJob,
     statusText,
     startRender,
+    cancelRender,
   };
 }

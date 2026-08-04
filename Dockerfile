@@ -24,6 +24,8 @@ FROM base AS worker
 RUN apt-get update && apt-get install -y --no-install-recommends chromium ffmpeg fonts-noto-cjk && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 ENV CHROMIUM_PATH=/usr/bin/chromium
+ENV REMOTION_BUNDLE_DIR=/app/.remotion-bundle
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN pnpm worker:bundle
 CMD ["pnpm", "worker"]

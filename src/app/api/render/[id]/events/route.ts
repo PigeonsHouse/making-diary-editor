@@ -13,7 +13,7 @@ export async function GET(_: Request, context: Context) {
       const send = async () => {
         const [row] = await db.select().from(renderJobs).where(eq(renderJobs.id, id));
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(row ?? { status: "missing" })}\n\n`));
-        if (!row || ["completed", "failed"].includes(row.status)) {
+        if (!row || ["completed", "failed", "cancelled"].includes(row.status)) {
           clearInterval(timer);
           controller.close();
         }
