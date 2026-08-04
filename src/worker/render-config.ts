@@ -1,3 +1,6 @@
+import { availableParallelism } from "node:os";
+import type { Bitrate } from "@remotion/renderer";
+
 const X264_PRESETS = [
   "ultrafast",
   "superfast",
@@ -34,12 +37,21 @@ export function getX264Preset(value = process.env.RENDER_X264_PRESET): X264Prese
   return X264_PRESETS.includes(value as X264Preset) ? (value as X264Preset) : "veryfast";
 }
 
+export function getSoftwareCrf(value = process.env.RENDER_SOFTWARE_CRF) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 51 ? parsed : 15;
+}
+
+export function getGpuVideoBitrate(value = process.env.RENDER_GPU_VIDEO_BITRATE): Bitrate {
+  return /^\d+(?:\.\d+)?[kKM]$/.test(value ?? "") ? (value as Bitrate) : "12M";
+}
+
 export function getRenderMediaCacheSize(value = process.env.RENDER_MEDIA_CACHE_MB) {
-  return positiveInteger(value, 1024) * 1024 * 1024;
+  return positiveInteger(value, 2048) * 1024 * 1024;
 }
 
 export function getOffthreadVideoThreads(value = process.env.RENDER_OFFTHREAD_VIDEO_THREADS) {
-  return positiveInteger(value, 4);
+  return positiveInteger(value, 8);
 }
 
 export function getPsdConcurrency(value = process.env.RENDER_PSD_CONCURRENCY) {
@@ -49,4 +61,3 @@ export function getPsdConcurrency(value = process.env.RENDER_PSD_CONCURRENCY) {
 export function getProgressIntervalMs(value = process.env.RENDER_PROGRESS_INTERVAL_MS) {
   return positiveInteger(value, 750);
 }
-import { availableParallelism } from "node:os";

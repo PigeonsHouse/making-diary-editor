@@ -10,6 +10,7 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "containers:up": "node scripts/compose-up.mjs",
     "db:push": "drizzle-kit push",
     "worker": "tsx src/worker/index.ts",
     "worker:bundle": "tsx src/worker/build-remotion-bundle.ts"

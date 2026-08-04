@@ -7,11 +7,22 @@
 ## 起動
 
 1. `.env.example`を`.env`へコピーし、必要なら`GEMINI_API_KEY`を設定します。
-2. Docker Composeを起動します。
+2. GPUを自動検出してDocker Composeを起動します。NVIDIA GPUが利用可能ならGPU構成、それ以外ならCPU構成になります。
 
 ```bash
-docker compose up --build
+pnpm containers:up -- --build
 ```
+
+通常の`docker compose up --build`も引き続き利用でき、この場合はGPUを要求しないCPU互換構成で起動します。
+明示的に切り替える場合は、自動起動コマンドへ`--cpu`または`--gpu`を追加します。
+
+```bash
+pnpm containers:up -- --cpu --build
+pnpm containers:up -- --gpu --build
+```
+
+レンダーワーカー内でも`RENDER_GPU_MODE=auto`が既定です。GPUがコンテナから見えない場合は従来のCPUレンダリングへ自動的に戻ります。`off`で常にCPU、`required`でGPUを必須にできます。
+GPU構成には、NVIDIA Container ToolkitまたはGPU対応のDocker Desktop（WSL2）が必要です。GPUのない環境では追加設定は不要です。
 
 ブラウザで`http://localhost:3000`を開きます。同じLAN内の端末からは、ホストPCのIPアドレスとポート`3000`を指定します。
 

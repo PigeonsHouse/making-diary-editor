@@ -18,12 +18,15 @@ import {
   watchRenderCancellation,
 } from "@/server/render-cancellation";
 import {
+  getGpuVideoBitrate,
   getProgressIntervalMs,
   getOffthreadVideoThreads,
   getRenderConcurrency,
   getRenderMediaCacheSize,
+  getSoftwareCrf,
   getX264Preset,
 } from "./render-config";
+import { detectGpuCapabilities, getGpuMode, isHardwareEncodingError, resolveGpuUsage } from "./gpu-runtime";
 import { resolveRenderAssetUrls } from "./render-input";
 import { getRemotionServeUrl } from "./remotion-bundler";
 import { createProgressReporter } from "./render-progress";
@@ -38,17 +41,46 @@ const getServeUrl = () => {
   return serveUrlPromise;
 };
 
-let browserPromise: ReturnType<typeof openBrowser> | null = null;
-const getBrowser = () => {
-  browserPromise ??= openBrowser("chrome", { browserExecutable: process.env.CHROMIUM_PATH });
+type BrowserRuntime = {
+  browser: Awaited<ReturnType<typeof openBrowser>>;
+  gpuRendering: boolean;
+};
+
+let browserPromise: Promise<BrowserRuntime> | null = null;
+const getBrowser = (gpuRendering: boolean, gpuMode: ReturnType<typeof getGpuMode>) => {
+  browserPromise ??= (async () => {
+    if (gpuRendering) {
+      try {
+        const browser = await openBrowser("chrome", {
+          browserExecutable: null,
+          chromeMode: "chrome-for-testing",
+          chromiumOptions: { gl: "angle-egl" },
+        });
+        return { browser, gpuRendering: true };
+      } catch (error) {
+        if (gpuMode === "required") throw error;
+        console.warn("GPU Chromium failed to start; falling back to CPU Chromium", error);
+      }
+    }
+    const browser = await openBrowser("chrome", { browserExecutable: process.env.CHROMIUM_PATH });
+    return { browser, gpuRendering: false };
+  })();
   return browserPromise;
 };
 
 async function main() {
   await mkdir(rendersDir, { recursive: true });
-  const runtimeWarmup = Promise.all([getServeUrl(), getBrowser()]);
+  const gpuMode = getGpuMode();
+  const gpuCapabilities = detectGpuCapabilities();
+  const gpuUsage = resolveGpuUsage(gpuMode, gpuCapabilities);
+  console.log(
+    `GPU mode=${gpuMode}, encoding=${gpuUsage.hardwareEncoding}, ` +
+      `Chromium=${gpuUsage.chromiumRendering} (${gpuCapabilities.source})`,
+  );
+  const runtimeWarmup = Promise.all([getServeUrl(), getBrowser(gpuUsage.chromiumRendering, gpuMode)]);
   void runtimeWarmup.then(
-    () => console.log("Remotion bundle and Chromium warmed up"),
+    ([, browserRuntime]) =>
+      console.log(`Remotion bundle and Chromium warmed up (${browserRuntime.gpuRendering ? "GPU" : "CPU"} rendering)`),
     (error) => console.error("Failed to warm up Remotion runtime", error),
   );
 
@@ -108,7 +140,7 @@ async function main() {
           characters: characterData,
           dialoguePsdPreviewUrls,
         });
-        const [serveUrl, browser] = await runtimeWarmup;
+        const [serveUrl, browserRuntime] = await runtimeWarmup;
         await throwIfCancellationRequested();
         const composition = {
           id: "DiaryVideo",
@@ -140,33 +172,59 @@ async function main() {
         const mediaCacheSizeInBytes = getRenderMediaCacheSize();
         const renderConcurrency = getRenderConcurrency();
         const x264Preset = getX264Preset();
+        const softwareCrf = getSoftwareCrf();
+        const gpuVideoBitrate = getGpuVideoBitrate();
         const offthreadVideoThreads = getOffthreadVideoThreads();
         console.log(
           `[render:${renderJobId}] ${composition.durationInFrames} frames, concurrency=${renderConcurrency}, ` +
-            `x264=${x264Preset}, offthreadVideoThreads=${offthreadVideoThreads}`,
+            `encoding=${gpuUsage.hardwareEncoding ? `GPU ${gpuVideoBitrate}` : `x264 ${x264Preset} CRF ${softwareCrf}`}, ` +
+            `Chromium=${browserRuntime.gpuRendering ? "GPU" : "CPU"}, offthreadVideoThreads=${offthreadVideoThreads}`,
         );
         const mediaStartedAt = performance.now();
-        await renderMedia({
-          serveUrl,
-          composition,
-          codec: "h264",
-          audioCodec: "aac",
-          imageFormat: "jpeg",
-          pixelFormat: "yuv420p",
-          colorSpace: "bt709",
-          crf: 15,
-          x264Preset,
-          concurrency: renderConcurrency,
-          mediaCacheSizeInBytes,
-          offthreadVideoCacheSizeInBytes: mediaCacheSizeInBytes,
-          offthreadVideoThreads,
-          outputLocation: outputPath,
-          inputProps,
-          cancelSignal,
-          puppeteerInstance: browser,
-          browserExecutable: process.env.CHROMIUM_PATH,
-          onProgress: ({ progress }) => progressReporter.report(progress),
-        });
+        const renderWithEncoding = (hardwareEncoding: boolean) =>
+          renderMedia({
+            serveUrl,
+            composition,
+            codec: "h264",
+            audioCodec: "aac",
+            imageFormat: "jpeg",
+            pixelFormat: "yuv420p",
+            colorSpace: "bt709",
+            ...(hardwareEncoding
+              ? {
+                  hardwareAcceleration: gpuMode === "required" ? ("required" as const) : ("if-possible" as const),
+                  videoBitrate: gpuVideoBitrate,
+                }
+              : { hardwareAcceleration: "disable" as const, crf: softwareCrf, x264Preset }),
+            concurrency: renderConcurrency,
+            mediaCacheSizeInBytes,
+            offthreadVideoCacheSizeInBytes: mediaCacheSizeInBytes,
+            offthreadVideoThreads,
+            outputLocation: outputPath,
+            inputProps,
+            cancelSignal,
+            puppeteerInstance: browserRuntime.browser,
+            onProgress: ({ progress }) => progressReporter.report(progress),
+          });
+        try {
+          await renderWithEncoding(gpuUsage.hardwareEncoding);
+        } catch (error) {
+          const cancellationRequested = cancellationObserved || (await isRenderCancellationRequested(renderJobId));
+          if (
+            gpuMode !== "required" &&
+            gpuUsage.hardwareEncoding &&
+            !cancellationRequested &&
+            isHardwareEncodingError(error)
+          ) {
+            console.warn(`[render:${renderJobId}] GPU encoding failed; retrying with x264`, error);
+            await unlink(outputPath).catch((unlinkError: NodeJS.ErrnoException) => {
+              if (unlinkError.code !== "ENOENT") throw unlinkError;
+            });
+            await renderWithEncoding(false);
+          } else {
+            throw error;
+          }
+        }
         await throwIfCancellationRequested();
         progressReporter.report(1);
         await progressReporter.flush();
