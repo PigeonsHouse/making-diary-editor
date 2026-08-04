@@ -11,6 +11,7 @@ import type { AssetRow, UpdateProject } from "./types";
 type Props = {
   diary: DiaryEntry;
   diaryIndex: number;
+  projectId: string;
   project: ProjectDocument;
   characters: Character[];
   assets: AssetRow[];
@@ -30,6 +31,7 @@ type Props = {
 export function DiaryPanel({
   diary,
   diaryIndex,
+  projectId,
   project,
   characters,
   assets,
@@ -46,7 +48,7 @@ export function DiaryPanel({
       aria-labelledby={`tab-diary-${diary.id}`}
       className="editor-tab-panel"
     >
-      <AssetLibrary assets={assets} onChanged={onAssetsChanged} />
+      <AssetLibrary projectId={projectId} assets={assets} onChanged={onAssetsChanged} />
       <article className="diary-card selected">
         <div className="diary-heading">
           <span className="order-badge">{String(diaryIndex + 1).padStart(2, "0")}</span>

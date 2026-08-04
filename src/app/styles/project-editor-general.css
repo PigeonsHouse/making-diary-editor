@@ -26,6 +26,61 @@
 .asset-library {
   padding: 0 18px 18px;
 }
+.asset-library-state {
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 11px;
+}
+.asset-scope {
+  padding: 4px 0 12px;
+  border-radius: 8px;
+  transition:
+    background 120ms ease,
+    outline-color 120ms ease;
+}
+.asset-scope + .asset-scope {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+}
+.asset-scope.drop-target {
+  outline: 2px dashed #7691ad;
+  outline-offset: 5px;
+  background: #edf4fa;
+}
+.asset-scope-heading {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.asset-scope-heading > div {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.asset-scope-heading strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.asset-scope-heading small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.asset-grid-empty {
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
 .project-audio-settings {
   padding: 0 18px 18px;
   display: grid;
@@ -134,10 +189,6 @@
   gap: 8px;
   margin-bottom: 12px;
 }
-.asset-library-state {
-  color: var(--danger);
-  font-size: 11px;
-}
 .upload-button {
   display: inline-block;
   padding: 9px 12px;
@@ -160,6 +211,15 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: #fff;
+}
+.asset-card[draggable="true"] {
+  cursor: grab;
+}
+.asset-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+.asset-card.dragging {
+  opacity: 0.45;
 }
 .asset-card.error {
   border-color: #e8aab5;
@@ -202,6 +262,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.asset-drag-handle {
+  color: #9aa3ad;
+  font-size: 13px;
+  letter-spacing: -4px;
+  user-select: none;
 }
 .asset-card-info > div {
   min-width: 0;

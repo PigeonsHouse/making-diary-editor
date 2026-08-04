@@ -7,6 +7,86 @@ import { apiError } from "@/server/http";
 
 type Context = { params: Promise<{ id: string }> };
 
+async function getAssetUsage(id: string) {
+  const [projectRows, characterRows] = await Promise.all([
+    db.select({ id: projects.id, name: projects.name, document: projects.document }).from(projects),
+    db.select({ data: characters.data }).from(characters),
+  ]);
+  const usedByProjects = projectRows.filter(({ document }) => {
+    const projectAudio = document.audio;
+    const legacyProjectAudio = projectAudio as typeof projectAudio & { dateSe?: { assetId: string } | null };
+    if (
+      projectAudio &&
+      [projectAudio.bgm, projectAudio.sceneIntroSe ?? legacyProjectAudio.dateSe, projectAudio.contentSe].some(
+        (clip) => clip?.assetId === id,
+      )
+    ) {
+      return true;
+    }
+    if (
+      document.wishList &&
+      ((document.wishList.sceneIntroSe?.mode === "custom" && document.wishList.sceneIntroSe.clip.assetId === id) ||
+        (document.wishList.bgm?.mode === "custom" && document.wishList.bgm.clip.assetId === id))
+    ) {
+      return true;
+    }
+    return document.diaries.some((diary) => {
+      const legacyDiary = diary as typeof diary & { dateSe?: typeof diary.sceneIntroSe };
+      const sceneIntroSe = diary.sceneIntroSe ?? legacyDiary.dateSe;
+      return (
+        (sceneIntroSe?.mode === "custom" && sceneIntroSe.clip.assetId === id) ||
+        (diary.bgm?.mode === "custom" && diary.bgm.clip.assetId === id) ||
+        diary.blocks.some(
+          (block) =>
+            block.asset?.assetId === id || (block.entrySe?.mode === "custom" && block.entrySe.clip.assetId === id),
+        )
+      );
+    });
+  });
+  const usedByCharacters = characterRows.filter(({ data }) => data.psdAssetId === id).map(({ data }) => data.name);
+  return { usedByProjects, usedByCharacters };
+}
+
+export async function PATCH(request: Request, context: Context) {
+  try {
+    const { id } = await context.params;
+    const input = (await request.json()) as { projectId?: unknown };
+    if (!(input.projectId === null || typeof input.projectId === "string")) {
+      return NextResponse.json({ error: "移動先が不正です" }, { status: 400 });
+    }
+    const targetProjectId = input.projectId;
+    const [asset] = await db.select().from(assets).where(eq(assets.id, id));
+    if (!asset) return NextResponse.json({ error: "素材が見つかりません" }, { status: 404 });
+    if (asset.projectId === targetProjectId) return NextResponse.json(asset);
+
+    if (targetProjectId) {
+      const [targetProject] = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(eq(projects.id, targetProjectId));
+      if (!targetProject) return NextResponse.json({ error: "移動先のプロジェクトが見つかりません" }, { status: 404 });
+
+      const { usedByProjects, usedByCharacters } = await getAssetUsage(id);
+      const otherProjects = usedByProjects.filter((project) => project.id !== targetProjectId);
+      if (otherProjects.length || usedByCharacters.length) {
+        const references = [
+          ...otherProjects.map((project) => `プロジェクト「${project.name}」`),
+          ...usedByCharacters.map((name) => `キャラクター「${name}」`),
+        ];
+        return NextResponse.json(
+          { error: `他の場所で使用中のためプロジェクト専用にできません: ${references.join("、")}` },
+          { status: 409 },
+        );
+      }
+    }
+
+    const [updated] = await db.update(assets).set({ projectId: targetProjectId }).where(eq(assets.id, id)).returning();
+    return NextResponse.json(updated);
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
 export async function DELETE(_: Request, context: Context) {
   try {
     const { id } = await context.params;
@@ -16,47 +96,10 @@ export async function DELETE(_: Request, context: Context) {
       return NextResponse.json({ error: "変換中の素材は削除できません" }, { status: 409 });
     }
 
-    const [projectRows, characterRows] = await Promise.all([
-      db.select({ name: projects.name, document: projects.document }).from(projects),
-      db.select({ data: characters.data }).from(characters),
-    ]);
-    const usedByProjects = projectRows
-      .filter(({ document }) => {
-        const projectAudio = document.audio;
-        const legacyProjectAudio = projectAudio as typeof projectAudio & { dateSe?: { assetId: string } | null };
-        if (
-          projectAudio &&
-          [projectAudio.bgm, projectAudio.sceneIntroSe ?? legacyProjectAudio.dateSe, projectAudio.contentSe].some(
-            (clip) => clip?.assetId === id,
-          )
-        ) {
-          return true;
-        }
-        if (
-          document.wishList &&
-          ((document.wishList.sceneIntroSe?.mode === "custom" && document.wishList.sceneIntroSe.clip.assetId === id) ||
-            (document.wishList.bgm?.mode === "custom" && document.wishList.bgm.clip.assetId === id))
-        ) {
-          return true;
-        }
-        return document.diaries.some((diary) => {
-          const legacyDiary = diary as typeof diary & { dateSe?: typeof diary.sceneIntroSe };
-          const sceneIntroSe = diary.sceneIntroSe ?? legacyDiary.dateSe;
-          return (
-            (sceneIntroSe?.mode === "custom" && sceneIntroSe.clip.assetId === id) ||
-            (diary.bgm?.mode === "custom" && diary.bgm.clip.assetId === id) ||
-            diary.blocks.some(
-              (block) =>
-                block.asset?.assetId === id || (block.entrySe?.mode === "custom" && block.entrySe.clip.assetId === id),
-            )
-          );
-        });
-      })
-      .map(({ name }) => name);
-    const usedByCharacters = characterRows.filter(({ data }) => data.psdAssetId === id).map(({ data }) => data.name);
+    const { usedByProjects, usedByCharacters } = await getAssetUsage(id);
     if (usedByProjects.length || usedByCharacters.length) {
       const references = [
-        ...usedByProjects.map((name) => `プロジェクト「${name}」`),
+        ...usedByProjects.map(({ name }) => `プロジェクト「${name}」`),
         ...usedByCharacters.map((name) => `キャラクター「${name}」`),
       ];
       return NextResponse.json({ error: `使用中のため削除できません: ${references.join("、")}` }, { status: 409 });

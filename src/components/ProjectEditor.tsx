@@ -49,7 +49,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
     Promise.all([
       fetch(`/api/projects/${projectId}`).then((response) => response.json()),
       fetch("/api/characters").then((response) => response.json()),
-      fetch("/api/assets").then((response) => response.json()),
+      fetch(`/api/assets?projectId=${encodeURIComponent(projectId)}`).then((response) => response.json()),
     ])
       .then(([project, characterRows, assetRows]: [ProjectRecord, CharacterRow[], AssetRow[]]) => {
         const cleanedLegacyOverrides = cleanLegacyVoiceOverrides(project.document);
@@ -245,7 +245,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
                 assets={assets}
                 onChange={(recipe) => update((draft) => recipe(draft.audio))}
               />
-              <AssetLibrary assets={assets} onChanged={setAssets} />
+              <AssetLibrary projectId={projectId} assets={assets} onChanged={setAssets} />
               <RenderHistory
                 jobs={renderJobs}
                 isLoading={isRenderHistoryLoading}
@@ -265,6 +265,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
                 key={diary.id}
                 diary={diary}
                 diaryIndex={diaryIndex}
+                projectId={projectId}
                 project={project}
                 characters={characters}
                 assets={assets}

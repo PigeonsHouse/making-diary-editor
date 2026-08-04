@@ -20,6 +20,13 @@ COPY --from=build /app/drizzle ./drizzle
 EXPOSE 3000
 CMD ["node", "server.js"]
 
+FROM base AS migrate
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json tsconfig.json ./
+COPY drizzle ./drizzle
+COPY scripts/migrate.ts ./scripts/migrate.ts
+CMD ["./node_modules/.bin/tsx", "scripts/migrate.ts"]
+
 FROM base AS worker
 RUN apt-get update && apt-get install -y --no-install-recommends chromium ffmpeg fonts-noto-cjk && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production

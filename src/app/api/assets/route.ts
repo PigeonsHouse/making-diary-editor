@@ -1,14 +1,26 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { desc } from "drizzle-orm";
+import { desc, eq, isNull, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { assets } from "@/server/db/schema";
+import { assets, projects } from "@/server/db/schema";
 import { apiError } from "@/server/http";
 import { assetQueue } from "@/server/queue";
 
-export async function GET() {
-  return NextResponse.json(await db.select().from(assets).orderBy(desc(assets.createdAt)));
+export async function GET(request: Request) {
+  try {
+    const projectId = new URL(request.url).searchParams.get("projectId");
+    const rows = projectId
+      ? await db
+          .select()
+          .from(assets)
+          .where(or(isNull(assets.projectId), eq(assets.projectId, projectId)))
+          .orderBy(desc(assets.createdAt))
+      : await db.select().from(assets).where(isNull(assets.projectId)).orderBy(desc(assets.createdAt));
+    return NextResponse.json(rows);
+  } catch (error) {
+    return apiError(error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -17,6 +29,12 @@ export async function POST(request: Request) {
     const file = form.get("file");
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "ファイルが必要です" }, { status: 400 });
+    }
+    const requestedProjectId = form.get("projectId");
+    const projectId = typeof requestedProjectId === "string" && requestedProjectId ? requestedProjectId : null;
+    if (projectId) {
+      const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.id, projectId));
+      if (!project) return NextResponse.json({ error: "プロジェクトが見つかりません" }, { status: 404 });
     }
     const kind = file.name.toLowerCase().endsWith(".psd")
       ? "psd"
@@ -42,6 +60,7 @@ export async function POST(request: Request) {
       .insert(assets)
       .values({
         id,
+        projectId,
         kind,
         originalName: file.name,
         originalPath,

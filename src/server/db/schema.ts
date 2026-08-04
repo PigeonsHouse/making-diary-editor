@@ -1,4 +1,4 @@
-import { jsonb, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { Character, ProjectDocument } from "@/domain/types";
 
 export const projects = pgTable("projects", {
@@ -18,17 +18,22 @@ export const characters = pgTable("characters", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const assets = pgTable("assets", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  kind: text("kind").notNull(),
-  originalName: text("original_name").notNull(),
-  originalPath: text("original_path").notNull(),
-  normalizedPath: text("normalized_path"),
-  status: text("status").notNull().default("processing"),
-  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
-  error: text("error"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const assets = pgTable(
+  "assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(),
+    originalName: text("original_name").notNull(),
+    originalPath: text("original_path").notNull(),
+    normalizedPath: text("normalized_path"),
+    status: text("status").notNull().default("processing"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("assets_project_id_idx").on(table.projectId)],
+);
 
 export const renderJobs = pgTable("render_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),

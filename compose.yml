@@ -20,6 +20,8 @@ services:
         aliases:
           - diary-web
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -49,10 +51,23 @@ services:
     volumes:
       - diary-data:/data
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: postgres://diary:diary@postgres:5432/diary
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   voicevox:
     image: voicevox/voicevox_engine:cpu-0.26.0-dev
@@ -69,7 +84,6 @@ services:
       POSTGRES_DB: diary
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./drizzle/0000_initial.sql:/docker-entrypoint-initdb.d/0000_initial.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U diary"]
       interval: 5s

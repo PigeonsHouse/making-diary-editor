@@ -8,6 +8,7 @@ export type CharacterRow = {
 
 export type AssetRow = {
   id: string;
+  projectId: string | null;
   kind: "image" | "video" | "audio" | "psd";
   originalName: string;
   status: string;
