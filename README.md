@@ -10,15 +10,15 @@
 2. GPUを自動検出してDocker Composeを起動します。NVIDIA GPUが利用可能ならGPU構成、それ以外ならCPU構成になります。
 
 ```bash
-pnpm containers:up -- --build
+pnpm containers:up --build
 ```
 
 通常の`docker compose up --build`も引き続き利用でき、この場合はGPUを要求しないCPU互換構成で起動します。
 明示的に切り替える場合は、自動起動コマンドへ`--cpu`または`--gpu`を追加します。
 
 ```bash
-pnpm containers:up -- --cpu --build
-pnpm containers:up -- --gpu --build
+pnpm containers:up --cpu --build
+pnpm containers:up --gpu --build
 ```
 
 レンダーワーカー内でも`RENDER_GPU_MODE=auto`が既定です。GPUがコンテナから見えない場合は従来のCPUレンダリングへ自動的に戻ります。`off`で常にCPU、`required`でGPUを必須にできます。

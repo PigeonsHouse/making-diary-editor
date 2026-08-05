@@ -23,8 +23,11 @@ import {
   getOffthreadVideoThreads,
   getRenderConcurrency,
   getRenderMediaCacheSize,
+  getRenderTimeoutMs,
   getSoftwareCrf,
+  getTimeoutRetryConcurrency,
   getX264Preset,
+  isDelayRenderTimeoutError,
 } from "./render-config";
 import { detectGpuCapabilities, getGpuMode, isHardwareEncodingError, resolveGpuUsage } from "./gpu-runtime";
 import { resolveRenderAssetUrls } from "./render-input";
@@ -175,13 +178,16 @@ async function main() {
         const softwareCrf = getSoftwareCrf();
         const gpuVideoBitrate = getGpuVideoBitrate();
         const offthreadVideoThreads = getOffthreadVideoThreads();
+        const timeoutInMilliseconds = getRenderTimeoutMs();
+        const timeoutRetryConcurrency = getTimeoutRetryConcurrency();
         console.log(
           `[render:${renderJobId}] ${composition.durationInFrames} frames, concurrency=${renderConcurrency}, ` +
             `encoding=${gpuUsage.hardwareEncoding ? `GPU ${gpuVideoBitrate}` : `x264 ${x264Preset} CRF ${softwareCrf}`}, ` +
-            `Chromium=${browserRuntime.gpuRendering ? "GPU" : "CPU"}, offthreadVideoThreads=${offthreadVideoThreads}`,
+            `Chromium=${browserRuntime.gpuRendering ? "GPU" : "CPU"}, offthreadVideoThreads=${offthreadVideoThreads}, ` +
+            `timeout=${timeoutInMilliseconds}ms`,
         );
         const mediaStartedAt = performance.now();
-        const renderWithEncoding = (hardwareEncoding: boolean) =>
+        const renderWithEncoding = (hardwareEncoding: boolean, concurrency: string | number) =>
           renderMedia({
             serveUrl,
             composition,
@@ -196,7 +202,8 @@ async function main() {
                   videoBitrate: gpuVideoBitrate,
                 }
               : { hardwareAcceleration: "disable" as const, crf: softwareCrf, x264Preset }),
-            concurrency: renderConcurrency,
+            concurrency,
+            timeoutInMilliseconds,
             mediaCacheSizeInBytes,
             offthreadVideoCacheSizeInBytes: mediaCacheSizeInBytes,
             offthreadVideoThreads,
@@ -206,23 +213,40 @@ async function main() {
             puppeteerInstance: browserRuntime.browser,
             onProgress: ({ progress }) => progressReporter.report(progress),
           });
-        try {
-          await renderWithEncoding(gpuUsage.hardwareEncoding);
-        } catch (error) {
-          const cancellationRequested = cancellationObserved || (await isRenderCancellationRequested(renderJobId));
-          if (
-            gpuMode !== "required" &&
-            gpuUsage.hardwareEncoding &&
-            !cancellationRequested &&
-            isHardwareEncodingError(error)
-          ) {
-            console.warn(`[render:${renderJobId}] GPU encoding failed; retrying with x264`, error);
+        let hardwareEncoding = gpuUsage.hardwareEncoding;
+        let attemptConcurrency = renderConcurrency;
+        let usedHardwareFallback = false;
+        let usedTimeoutFallback = false;
+        while (true) {
+          try {
+            await renderWithEncoding(hardwareEncoding, attemptConcurrency);
+            break;
+          } catch (error) {
+            const cancellationRequested = cancellationObserved || (await isRenderCancellationRequested(renderJobId));
+            if (cancellationRequested) throw error;
+
+            if (gpuMode !== "required" && hardwareEncoding && !usedHardwareFallback && isHardwareEncodingError(error)) {
+              hardwareEncoding = false;
+              usedHardwareFallback = true;
+              console.warn(`[render:${renderJobId}] GPU encoding failed; retrying with x264`, error);
+            } else if (
+              !usedTimeoutFallback &&
+              isDelayRenderTimeoutError(error) &&
+              (typeof attemptConcurrency !== "number" || timeoutRetryConcurrency < attemptConcurrency)
+            ) {
+              attemptConcurrency = timeoutRetryConcurrency;
+              usedTimeoutFallback = true;
+              console.warn(
+                `[render:${renderJobId}] delayRender timeout; retrying with concurrency=${timeoutRetryConcurrency}`,
+                error,
+              );
+            } else {
+              throw error;
+            }
+
             await unlink(outputPath).catch((unlinkError: NodeJS.ErrnoException) => {
               if (unlinkError.code !== "ENOENT") throw unlinkError;
             });
-            await renderWithEncoding(false);
-          } else {
-            throw error;
           }
         }
         await throwIfCancellationRequested();

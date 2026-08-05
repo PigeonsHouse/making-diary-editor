@@ -51,7 +51,23 @@ export function getRenderMediaCacheSize(value = process.env.RENDER_MEDIA_CACHE_M
 }
 
 export function getOffthreadVideoThreads(value = process.env.RENDER_OFFTHREAD_VIDEO_THREADS) {
-  return positiveInteger(value, 8);
+  return positiveInteger(value, 4);
+}
+
+export function getRenderTimeoutMs(value = process.env.RENDER_TIMEOUT_MS) {
+  return positiveInteger(value, 120_000);
+}
+
+export function getTimeoutRetryConcurrency(
+  value = process.env.RENDER_TIMEOUT_RETRY_CONCURRENCY,
+  cpuCount = availableParallelism(),
+) {
+  return positiveInteger(value, Math.min(4, automaticConcurrency(cpuCount)));
+}
+
+export function isDelayRenderTimeoutError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /delayRender\(\).*not cleared after \d+ms/i.test(message);
 }
 
 export function getPsdConcurrency(value = process.env.RENDER_PSD_CONCURRENCY) {
