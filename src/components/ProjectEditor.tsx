@@ -18,6 +18,15 @@ import type { AssetRow, CharacterRow, EditorTab } from "./project-editor/types";
 import { useNavigationGuard } from "./project-editor/useNavigationGuard";
 import { useRenderJobs } from "./project-editor/useRenderJobs";
 
+const projectTabStorageKey = (projectId: string) => `making-diary-editor:project-tab:${projectId}`;
+
+const isAvailableEditorTab = (value: string | null, project: ProjectDocument): value is EditorTab => {
+  if (value === "general" || value === "wish") return true;
+  if (!value?.startsWith("diary:")) return false;
+  const diaryId = value.slice("diary:".length);
+  return project.diaries.some((diary) => diary.id === diaryId);
+};
+
 export function ProjectEditor({ projectId }: { projectId: string }) {
   const [record, setRecord] = useState<ProjectRecord | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -27,6 +36,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
   const [activeTab, setActiveTab] = useState<EditorTab>("general");
   const skipSave = useRef(true);
   const changeVersion = useRef(0);
+  const hasRestoredActiveTab = useRef(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const {
     jobs: renderJobs,
@@ -46,6 +56,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
   );
 
   useEffect(() => {
+    hasRestoredActiveTab.current = false;
     Promise.all([
       fetch(`/api/projects/${projectId}`).then((response) => response.json()),
       fetch("/api/characters").then((response) => response.json()),
@@ -55,9 +66,18 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
         const cleanedLegacyOverrides = cleanLegacyVoiceOverrides(project.document);
         const filledAssetDurations = fillMissingAssetDurations(cleanedLegacyOverrides.document, assetRows);
         const documentChanged = cleanedLegacyOverrides.changed || filledAssetDurations.changed;
-        setRecord({ ...project, document: filledAssetDurations.document });
+        const nextProject = filledAssetDurations.document;
+        setRecord({ ...project, document: nextProject });
         setCharacters(characterRows.map((row) => row.data));
         setAssets(assetRows);
+        let storedTab: string | null = null;
+        try {
+          storedTab = window.localStorage.getItem(projectTabStorageKey(projectId));
+        } catch {
+          // localStorageが無効な環境では既定タブを使用する。
+        }
+        setActiveTab(isAvailableEditorTab(storedTab, nextProject) ? storedTab : "general");
+        hasRestoredActiveTab.current = true;
         setSaveState(documentChanged ? "未保存" : "保存済み");
         changeVersion.current = documentChanged ? 1 : 0;
         setHasPendingSave(documentChanged);
@@ -65,6 +85,15 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
       })
       .catch(() => setSaveState("読み込み失敗"));
   }, [projectId]);
+
+  useEffect(() => {
+    if (!hasRestoredActiveTab.current) return;
+    try {
+      window.localStorage.setItem(projectTabStorageKey(projectId), activeTab);
+    } catch {
+      // localStorageが無効でも編集操作は継続できる。
+    }
+  }, [activeTab, projectId]);
 
   const update = useCallback((recipe: (draft: ProjectDocument) => void) => {
     changeVersion.current += 1;

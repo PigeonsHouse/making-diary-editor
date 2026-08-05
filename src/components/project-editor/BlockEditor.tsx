@@ -117,7 +117,7 @@ export function BlockEditor({
                     assetId: asset.id,
                     type: asset.kind as "image" | "video",
                     url: `/api/files/assets/${asset.id}`,
-                    displayArea: "full",
+                    displayArea: "above-dialogue",
                     sourceDurationSeconds: asset.kind === "video" ? getAssetDurationSeconds(asset) : null,
                     trim: { top: 0, right: 0, bottom: 0, left: 0 },
                     startSeconds: 0,

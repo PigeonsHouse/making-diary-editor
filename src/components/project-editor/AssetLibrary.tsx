@@ -23,8 +23,8 @@ export function AssetLibrary({ projectId, assets, onChanged }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropScope, setDropScope] = useState<AssetScope | null>(null);
   const [expandedScopes, setExpandedScopes] = useState<Record<AssetScope, boolean>>({
-    shared: true,
-    project: true,
+    shared: false,
+    project: false,
   });
   const [previewAsset, setPreviewAsset] = useState<AssetRow | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
