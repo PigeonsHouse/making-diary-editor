@@ -10,7 +10,7 @@ type Context = { params: Promise<{ assetId: string }> };
 
 async function getAsset(id: string) {
   const [asset] = await db.select().from(assets).where(eq(assets.id, id));
-  if (!asset || !asset.originalName.toLowerCase().endsWith(".psd")) {
+  if (!asset || (asset.kind !== "psd" && !asset.originalName.toLowerCase().endsWith(".psd"))) {
     throw new Error("PSDを利用できません");
   }
   if (asset.kind !== "psd" || asset.status !== "ready") {

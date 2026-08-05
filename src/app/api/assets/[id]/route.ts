@@ -50,16 +50,31 @@ async function getAssetUsage(id: string) {
 export async function PATCH(request: Request, context: Context) {
   try {
     const { id } = await context.params;
-    const input = (await request.json()) as { projectId?: unknown };
-    if (!(input.projectId === null || typeof input.projectId === "string")) {
+    const input = (await request.json()) as { projectId?: unknown; originalName?: unknown };
+    const hasProjectId = Object.hasOwn(input, "projectId");
+    const hasOriginalName = Object.hasOwn(input, "originalName");
+    if (!hasProjectId && !hasOriginalName) {
+      return NextResponse.json({ error: "変更内容がありません" }, { status: 400 });
+    }
+    if (hasProjectId && !(input.projectId === null || typeof input.projectId === "string")) {
       return NextResponse.json({ error: "移動先が不正です" }, { status: 400 });
     }
-    const targetProjectId = input.projectId;
+    if (hasOriginalName && typeof input.originalName !== "string") {
+      return NextResponse.json({ error: "素材名が不正です" }, { status: 400 });
+    }
+    const originalName = typeof input.originalName === "string" ? input.originalName.trim() : undefined;
+    if (hasOriginalName && !originalName) {
+      return NextResponse.json({ error: "素材名を入力してください" }, { status: 400 });
+    }
+    if (originalName && originalName.length > 255) {
+      return NextResponse.json({ error: "素材名は255文字以内で入力してください" }, { status: 400 });
+    }
+
+    const targetProjectId = hasProjectId ? (input.projectId as string | null) : undefined;
     const [asset] = await db.select().from(assets).where(eq(assets.id, id));
     if (!asset) return NextResponse.json({ error: "素材が見つかりません" }, { status: 404 });
-    if (asset.projectId === targetProjectId) return NextResponse.json(asset);
 
-    if (targetProjectId) {
+    if (targetProjectId && asset.projectId !== targetProjectId) {
       const [targetProject] = await db
         .select({ id: projects.id })
         .from(projects)
@@ -80,7 +95,14 @@ export async function PATCH(request: Request, context: Context) {
       }
     }
 
-    const [updated] = await db.update(assets).set({ projectId: targetProjectId }).where(eq(assets.id, id)).returning();
+    const [updated] = await db
+      .update(assets)
+      .set({
+        ...(hasProjectId ? { projectId: targetProjectId } : {}),
+        ...(originalName ? { originalName } : {}),
+      })
+      .where(eq(assets.id, id))
+      .returning();
     return NextResponse.json(updated);
   } catch (error) {
     return apiError(error);

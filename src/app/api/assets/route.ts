@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { desc, eq, isNull, or } from "drizzle-orm";
+import { asc, eq, isNull, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { assets, projects } from "@/server/db/schema";
@@ -15,8 +15,8 @@ export async function GET(request: Request) {
           .select()
           .from(assets)
           .where(or(isNull(assets.projectId), eq(assets.projectId, projectId)))
-          .orderBy(desc(assets.createdAt))
-      : await db.select().from(assets).where(isNull(assets.projectId)).orderBy(desc(assets.createdAt));
+          .orderBy(asc(assets.originalName))
+      : await db.select().from(assets).where(isNull(assets.projectId)).orderBy(asc(assets.originalName));
     return NextResponse.json(rows);
   } catch (error) {
     return apiError(error);
