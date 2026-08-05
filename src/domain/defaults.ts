@@ -1,4 +1,5 @@
 import type { Character, ContentBlock, Dialogue, DiaryEntry, ProjectDocument } from "./types";
+import { createId } from "./id";
 
 export const EDITOR_CONSTANTS = {
   fps: 30,
@@ -14,7 +15,7 @@ export const EDITOR_CONSTANTS = {
 } as const;
 
 export const createDialogue = (characterId: string): Dialogue => ({
-  id: crypto.randomUUID(),
+  id: createId(),
   characterId,
   text: "新しいセリフ",
   kana: null,
@@ -31,7 +32,7 @@ export const createDialogue = (characterId: string): Dialogue => ({
 });
 
 export const createBlock = (): ContentBlock => ({
-  id: crypto.randomUUID(),
+  id: createId(),
   title: "",
   asset: null,
   dialogues: [],
@@ -41,7 +42,7 @@ export const createBlock = (): ContentBlock => ({
 });
 
 export const createDiary = (): DiaryEntry => ({
-  id: crypto.randomUUID(),
+  id: createId(),
   date: new Date().toISOString().slice(0, 10),
   subtitle: "",
   blocks: [createBlock()],
@@ -59,7 +60,7 @@ export const createProject = (name = "新しい製作日誌"): ProjectDocument =
 });
 
 export const createCharacter = (): Character => ({
-  id: crypto.randomUUID(),
+  id: createId(),
   name: "新しいキャラクター",
   voicevoxName: "ずんだもん",
   color: "#5b8def",
