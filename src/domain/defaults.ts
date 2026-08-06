@@ -65,6 +65,7 @@ export const createCharacter = (): Character => ({
   voicevoxName: "ずんだもん",
   color: "#5b8def",
   personality: "",
+  creditIds: [],
   defaultPauseBeforeSeconds: 0.25,
   voice: { styleName: "ノーマル", speed: 1, pitch: 0, intonation: 1, volume: 1 },
   psdAssetId: null,

@@ -38,6 +38,47 @@
 .asset-library {
   padding: 0 18px 18px;
 }
+.project-credit-id-list {
+  padding: 0 18px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.project-credit-id-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.project-credit-id-actions button {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.project-credit-id-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.project-credit-id-list a {
+  border-radius: 6px;
+}
+.project-credit-id-list code {
+  display: block;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8f9fb;
+  user-select: all;
+}
+.project-credit-id-list a:hover code,
+.project-credit-id-list a:focus-visible code {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.project-credit-id-empty {
+  margin: 0;
+  padding: 0 18px 18px;
+  color: var(--muted);
+  font-size: 11px;
+}
 .asset-library-state {
   margin: 0 0 8px;
   color: var(--danger);

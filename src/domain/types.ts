@@ -22,6 +22,7 @@ export const characterSchema = z.object({
   voicevoxName: z.string().min(1),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   personality: z.string().default(""),
+  creditIds: z.array(z.string()).default([]),
   defaultPauseBeforeSeconds: z.number().default(0.25),
   voice: voiceSettingsSchema,
   psdAssetId: z.string().uuid().nullable().default(null),

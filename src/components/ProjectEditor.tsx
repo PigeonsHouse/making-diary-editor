@@ -10,6 +10,7 @@ import { ProjectAudioSettingsEditor } from "./project-editor/AudioSettings";
 import { CastEditor } from "./project-editor/CastEditor";
 import { DiaryPanel } from "./project-editor/DiaryPanel";
 import { ProjectTabs } from "./project-editor/ProjectTabs";
+import { ProjectCreditIds } from "./project-editor/ProjectCreditIds";
 import { RenderDownloadLink, RenderHistory } from "./project-editor/RenderHistory";
 import { WishEditor } from "./project-editor/WishEditor";
 import { cleanLegacyVoiceOverrides, fillMissingAssetDurations } from "./project-editor/project-document";
@@ -274,6 +275,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
                 assets={assets}
                 onChange={(recipe) => update((draft) => recipe(draft.audio))}
               />
+              <ProjectCreditIds project={project} characters={characters} assets={assets} />
               <AssetLibrary projectId={projectId} assets={assets} onChanged={setAssets} />
               <RenderHistory
                 jobs={renderJobs}

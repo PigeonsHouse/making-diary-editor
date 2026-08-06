@@ -229,6 +229,19 @@ export default function CharactersPage() {
                   }
                 />
               </label>
+              <label className="wide">
+                クレジットID（複数可）
+                <textarea
+                  placeholder={"sm12345678\nim1234567\nnc123456"}
+                  value={row.data.creditIds.join("\n")}
+                  onChange={(event) =>
+                    update((draft) => {
+                      draft.creditIds = event.target.value.split("\n");
+                    })
+                  }
+                />
+                <small>1行に1つずつ入力できます。</small>
+              </label>
             </div>
             <AvatarPositionPreview character={row.data} />
             <PsdSettings character={row.data} update={update} />
