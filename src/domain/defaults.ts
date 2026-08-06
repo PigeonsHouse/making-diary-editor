@@ -55,6 +55,7 @@ export const createProject = (name = "新しい製作日誌"): ProjectDocument =
   audio: { bgm: null, sceneIntroSe: null, contentSe: null },
   characterIds: [],
   characterAvatarOverrides: {},
+  thumbnail: { elements: [] },
   wishList: null,
   diaries: [],
 });

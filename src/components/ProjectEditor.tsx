@@ -11,6 +11,7 @@ import { CastEditor } from "./project-editor/CastEditor";
 import { DiaryPanel } from "./project-editor/DiaryPanel";
 import { ProjectTabs } from "./project-editor/ProjectTabs";
 import { ProjectCreditIds } from "./project-editor/ProjectCreditIds";
+import { ThumbnailEditor, ThumbnailPreview } from "./project-editor/ThumbnailEditor";
 import { RenderDownloadLink, RenderHistory } from "./project-editor/RenderHistory";
 import { WishEditor } from "./project-editor/WishEditor";
 import { cleanLegacyVoiceOverrides, fillMissingAssetDurations } from "./project-editor/project-document";
@@ -22,7 +23,7 @@ import { useRenderJobs } from "./project-editor/useRenderJobs";
 const projectTabStorageKey = (projectId: string) => `making-diary-editor:project-tab:${projectId}`;
 
 const isAvailableEditorTab = (value: string | null, project: ProjectDocument): value is EditorTab => {
-  if (value === "general" || value === "wish") return true;
+  if (value === "general" || value === "thumbnail" || value === "wish") return true;
   if (!value?.startsWith("diary:")) return false;
   const diaryId = value.slice("diary:".length);
   return project.diaries.some((diary) => diary.id === diaryId);
@@ -285,6 +286,11 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
               />
             </div>
           ) : null}
+          {activeTab === "thumbnail" ? (
+            <div id="panel-thumbnail" role="tabpanel" aria-labelledby="tab-thumbnail" className="editor-tab-panel">
+              <ThumbnailEditor project={project} characters={characters} assets={assets} update={update} />
+            </div>
+          ) : null}
           {activeTab === "wish" ? (
             <div id="panel-wish" role="tabpanel" aria-labelledby="tab-wish" className="editor-tab-panel">
               <WishEditor project={project} characters={characters} assets={assets} update={update} />
@@ -310,7 +316,11 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
           )}
         </section>
         <aside className="preview-column">
-          <VideoPreview key={activeTab} project={previewProject} characters={characters} />
+          {activeTab === "thumbnail" ? (
+            <ThumbnailPreview thumbnail={project.thumbnail} characters={characters} assets={assets} />
+          ) : (
+            <VideoPreview key={activeTab} project={previewProject} characters={characters} />
+          )}
           <div className="preview-meta">
             <span>1920 × 1080</span>
             <span>30 FPS</span>

@@ -28,6 +28,16 @@ export function ProjectTabs({ activeTab, diaries, tabsRef, onSelect, onSortDiari
           <span>一般設定</span>
         </button>
         <button
+          id="tab-thumbnail"
+          role="tab"
+          aria-selected={activeTab === "thumbnail"}
+          aria-controls="panel-thumbnail"
+          className={activeTab === "thumbnail" ? "active" : ""}
+          onClick={() => onSelect("thumbnail")}
+        >
+          <span>サムネイル</span>
+        </button>
+        <button
           id="tab-wish"
           role="tab"
           aria-selected={activeTab === "wish"}
