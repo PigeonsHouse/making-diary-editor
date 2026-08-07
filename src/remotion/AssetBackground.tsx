@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { AbsoluteFill, Freeze, Img, Loop, OffthreadVideo, Sequence, interpolate, useCurrentFrame } from "remotion";
+import { Video } from "@remotion/media";
+import { AbsoluteFill, Freeze, Img, Loop, Sequence, interpolate, useCurrentFrame } from "remotion";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import type { AssetSettings, ContentBlock } from "@/domain/types";
 import { getVideoAssetTiming, getVideoPlaybackRateError } from "@/domain/video-asset";
@@ -107,13 +108,14 @@ function VideoAsset({
     );
   }
   const video = (
-    <OffthreadVideo
+    <Video
       src={asset.url}
       trimBefore={timing.trimBefore}
       trimAfter={timing.trimAfter}
       playbackRate={timing.playbackRate}
       volume={asset.volume}
-      style={style}
+      objectFit="contain"
+      style={{ ...style, objectFit: undefined, objectPosition: undefined }}
     />
   );
 

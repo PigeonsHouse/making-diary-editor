@@ -6,6 +6,7 @@ import {
   getPsdConcurrency,
   getRenderConcurrency,
   getRenderMediaCacheSize,
+  getRenderLogIntervalMs,
   getRenderTimeoutMs,
   getSoftwareCrf,
   getTimeoutRetryConcurrency,
@@ -25,6 +26,7 @@ describe("render config", () => {
     expect(getTimeoutRetryConcurrency(undefined, 8)).toBe(4);
     expect(getPsdConcurrency(undefined)).toBe(2);
     expect(getProgressIntervalMs(undefined)).toBe(750);
+    expect(getRenderLogIntervalMs(undefined)).toBe(15_000);
   });
 
   it("accepts concurrency percentages and integers", () => {

@@ -77,3 +77,7 @@ export function getPsdConcurrency(value = process.env.RENDER_PSD_CONCURRENCY) {
 export function getProgressIntervalMs(value = process.env.RENDER_PROGRESS_INTERVAL_MS) {
   return positiveInteger(value, 750);
 }
+
+export function getRenderLogIntervalMs(value = process.env.RENDER_LOG_INTERVAL_MS) {
+  return positiveInteger(value, 15_000);
+}

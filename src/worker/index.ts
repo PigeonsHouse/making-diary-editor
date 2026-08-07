@@ -19,6 +19,7 @@ import {
 } from "@/server/render-cancellation";
 import {
   getGpuVideoBitrate,
+  getRenderLogIntervalMs,
   getProgressIntervalMs,
   getOffthreadVideoThreads,
   getRenderConcurrency,
@@ -33,6 +34,10 @@ import { detectGpuCapabilities, getGpuMode, isHardwareEncodingError, resolveGpuU
 import { resolveRenderAssetUrls } from "./render-input";
 import { getRemotionServeUrl } from "./remotion-bundler";
 import { createProgressReporter } from "./render-progress";
+import { calculateDetailedRenderProgress } from "./render-progress-value";
+import { createRenderDiagnostics } from "./render-diagnostics";
+import { createFrameDescription } from "./render-frame-description";
+import { createRenderResourceCoordinator } from "./render-resource-coordinator";
 import { prepareDialoguePsdPreviews } from "./prepare-psd";
 
 const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
@@ -86,6 +91,7 @@ async function main() {
       console.log(`Remotion bundle and Chromium warmed up (${browserRuntime.gpuRendering ? "GPU" : "CPU"} rendering)`),
     (error) => console.error("Failed to warm up Remotion runtime", error),
   );
+  const renderResources = createRenderResourceCoordinator();
 
   new Worker(
     "renders",
@@ -97,6 +103,7 @@ async function main() {
       const outputPath = path.join(rendersDir, `${renderJobId}.mp4`);
       const { cancelSignal, cancel } = makeCancelSignal();
       let cancellationObserved = false;
+      let releaseRenderResources: (() => void) | null = null;
       const stopWatchingCancellation = watchRenderCancellation(renderJobId, () => {
         cancellationObserved = true;
         cancel();
@@ -111,16 +118,29 @@ async function main() {
       try {
         const [started] = await db
           .update(renderJobs)
-          .set({ status: "rendering", progress: 0, error: null, updatedAt: new Date() })
+          .set({ status: "preparing", progress: 0, etaMs: null, error: null, updatedAt: new Date() })
           .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "queued")))
           .returning({ id: renderJobs.id });
         // キューから取り出す直前に中断されたジョブは実行しない。
         if (!started) {
           await db
             .update(renderJobs)
-            .set({ status: "cancelled", error: null, updatedAt: new Date() })
+            .set({ status: "cancelled", etaMs: null, error: null, updatedAt: new Date() })
             .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "cancelling")));
           return;
+        }
+        await throwIfCancellationRequested();
+        const resourceLease = renderResources.reserveRender();
+        releaseRenderResources = resourceLease.release;
+        if (resourceLease.waitingForBackgroundWork) {
+          const waitStartedAt = performance.now();
+          console.log(`[render:${renderJobId}] waiting for active background worker job`);
+          await resourceLease.ready;
+          console.log(
+            `[render:${renderJobId}] background worker wait completed in ${Math.round(performance.now() - waitStartedAt)}ms`,
+          );
+        } else {
+          await resourceLease.ready;
         }
         await throwIfCancellationRequested();
         const snapshot = projectDocumentSchema.parse(job.snapshot);
@@ -138,9 +158,14 @@ async function main() {
         console.log(`[render:${renderJobId}] PSD preparation ${Math.round(performance.now() - psdStartedAt)}ms`);
         await throwIfCancellationRequested();
 
+        const renderCharacters = characterData.map((character) => {
+          const previewUrl = dialoguePsdPreviewUrls[`character:${character.id}`];
+          return previewUrl ? { ...character, avatar: { ...character.avatar, previewUrl } } : character;
+        });
+
         const inputProps = resolveRenderAssetUrls({
           project: snapshot,
-          characters: characterData,
+          characters: renderCharacters,
           dialoguePsdPreviewUrls,
         });
         const [serveUrl, browserRuntime] = await runtimeWarmup;
@@ -160,14 +185,26 @@ async function main() {
           defaultProResProfile: null,
           defaultSampleRate: null,
         } as const;
+        const [rendering] = await db
+          .update(renderJobs)
+          .set({ status: "rendering", progress: 0, etaMs: null, error: null, updatedAt: new Date() })
+          .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "preparing")))
+          .returning({ id: renderJobs.id });
+        if (!rendering) {
+          await db
+            .update(renderJobs)
+            .set({ status: "cancelled", etaMs: null, error: null, updatedAt: new Date() })
+            .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "cancelling")));
+          return;
+        }
         const progressReporter = createProgressReporter({
           intervalMs: getProgressIntervalMs(),
-          persist: async (percent) => {
+          persist: async (percent, etaMs) => {
             await Promise.all([
               queueJob.updateProgress(percent),
               db
                 .update(renderJobs)
-                .set({ progress: percent, updatedAt: new Date() })
+                .set({ progress: percent, etaMs, updatedAt: new Date() })
                 .where(eq(renderJobs.id, renderJobId)),
             ]);
           },
@@ -180,6 +217,12 @@ async function main() {
         const offthreadVideoThreads = getOffthreadVideoThreads();
         const timeoutInMilliseconds = getRenderTimeoutMs();
         const timeoutRetryConcurrency = getTimeoutRetryConcurrency();
+        const renderDiagnostics = createRenderDiagnostics({
+          renderJobId,
+          totalFrames: composition.durationInFrames,
+          intervalMs: getRenderLogIntervalMs(),
+        });
+        const describeFrame = createFrameDescription(snapshot, renderCharacters, composition.fps);
         console.log(
           `[render:${renderJobId}] ${composition.durationInFrames} frames, concurrency=${renderConcurrency}, ` +
             `encoding=${gpuUsage.hardwareEncoding ? `GPU ${gpuVideoBitrate}` : `x264 ${x264Preset} CRF ${softwareCrf}`}, ` +
@@ -211,44 +254,68 @@ async function main() {
             inputProps,
             cancelSignal,
             puppeteerInstance: browserRuntime.browser,
-            onProgress: ({ progress }) => progressReporter.report(progress),
+            onStart: renderDiagnostics.onStart,
+            onDownload: renderDiagnostics.onDownload,
+            onBrowserLog: (message) => {
+              if (message.type === "error" || message.type === "warning") {
+                console.warn(`[render:${renderJobId}] browser ${message.type}: ${message.text}`);
+              }
+            },
+            onProgress: (progress) => {
+              progressReporter.report(
+                calculateDetailedRenderProgress(progress, composition.durationInFrames),
+                progress.renderEstimatedTime,
+              );
+              renderDiagnostics.onProgress(progress);
+            },
           });
         let hardwareEncoding = gpuUsage.hardwareEncoding;
         let attemptConcurrency = renderConcurrency;
         let usedHardwareFallback = false;
         let usedTimeoutFallback = false;
-        while (true) {
-          try {
-            await renderWithEncoding(hardwareEncoding, attemptConcurrency);
-            break;
-          } catch (error) {
-            const cancellationRequested = cancellationObserved || (await isRenderCancellationRequested(renderJobId));
-            if (cancellationRequested) throw error;
+        let renderResult: Awaited<ReturnType<typeof renderMedia>> | null = null;
+        try {
+          while (true) {
+            try {
+              renderResult = await renderWithEncoding(hardwareEncoding, attemptConcurrency);
+              break;
+            } catch (error) {
+              const cancellationRequested = cancellationObserved || (await isRenderCancellationRequested(renderJobId));
+              if (cancellationRequested) throw error;
 
-            if (gpuMode !== "required" && hardwareEncoding && !usedHardwareFallback && isHardwareEncodingError(error)) {
-              hardwareEncoding = false;
-              usedHardwareFallback = true;
-              console.warn(`[render:${renderJobId}] GPU encoding failed; retrying with x264`, error);
-            } else if (
-              !usedTimeoutFallback &&
-              isDelayRenderTimeoutError(error) &&
-              (typeof attemptConcurrency !== "number" || timeoutRetryConcurrency < attemptConcurrency)
-            ) {
-              attemptConcurrency = timeoutRetryConcurrency;
-              usedTimeoutFallback = true;
-              console.warn(
-                `[render:${renderJobId}] delayRender timeout; retrying with concurrency=${timeoutRetryConcurrency}`,
-                error,
-              );
-            } else {
-              throw error;
+              if (
+                gpuMode !== "required" &&
+                hardwareEncoding &&
+                !usedHardwareFallback &&
+                isHardwareEncodingError(error)
+              ) {
+                hardwareEncoding = false;
+                usedHardwareFallback = true;
+                console.warn(`[render:${renderJobId}] GPU encoding failed; retrying with x264`, error);
+              } else if (
+                !usedTimeoutFallback &&
+                isDelayRenderTimeoutError(error) &&
+                (typeof attemptConcurrency !== "number" || timeoutRetryConcurrency < attemptConcurrency)
+              ) {
+                attemptConcurrency = timeoutRetryConcurrency;
+                usedTimeoutFallback = true;
+                console.warn(
+                  `[render:${renderJobId}] delayRender timeout; retrying with concurrency=${timeoutRetryConcurrency}`,
+                  error,
+                );
+              } else {
+                throw error;
+              }
+
+              await unlink(outputPath).catch((unlinkError: NodeJS.ErrnoException) => {
+                if (unlinkError.code !== "ENOENT") throw unlinkError;
+              });
             }
-
-            await unlink(outputPath).catch((unlinkError: NodeJS.ErrnoException) => {
-              if (unlinkError.code !== "ENOENT") throw unlinkError;
-            });
           }
+        } finally {
+          renderDiagnostics.stop();
         }
+        renderDiagnostics.finish(renderResult.slowestFrames, describeFrame);
         await throwIfCancellationRequested();
         progressReporter.report(1);
         await progressReporter.flush();
@@ -258,6 +325,7 @@ async function main() {
           .set({
             status: "completed",
             progress: 100,
+            etaMs: null,
             outputPath,
             updatedAt: new Date(),
           })
@@ -269,7 +337,7 @@ async function main() {
           });
           await db
             .update(renderJobs)
-            .set({ status: "cancelled", error: null, updatedAt: new Date() })
+            .set({ status: "cancelled", etaMs: null, error: null, updatedAt: new Date() })
             .where(and(eq(renderJobs.id, renderJobId), eq(renderJobs.status, "cancelling")));
           return;
         }
@@ -286,9 +354,12 @@ async function main() {
           });
           await db
             .update(renderJobs)
-            .set({ status: "cancelled", error: null, updatedAt: new Date() })
+            .set({ status: "cancelled", etaMs: null, error: null, updatedAt: new Date() })
             .where(
-              and(eq(renderJobs.id, renderJobId), inArray(renderJobs.status, ["queued", "rendering", "cancelling"])),
+              and(
+                eq(renderJobs.id, renderJobId),
+                inArray(renderJobs.status, ["queued", "preparing", "rendering", "cancelling"]),
+              ),
             );
           console.log(`[render:${renderJobId}] cancelled`);
           return;
@@ -297,12 +368,14 @@ async function main() {
           .update(renderJobs)
           .set({
             status: "failed",
+            etaMs: null,
             error: error instanceof Error ? error.message : String(error),
             updatedAt: new Date(),
           })
-          .where(and(eq(renderJobs.id, renderJobId), inArray(renderJobs.status, ["queued", "rendering"])));
+          .where(and(eq(renderJobs.id, renderJobId), inArray(renderJobs.status, ["queued", "preparing", "rendering"])));
         throw error;
       } finally {
+        releaseRenderResources?.();
         stopWatchingCancellation();
         await clearRenderCancellation(renderJobId).catch((error) =>
           console.error(`[render:${renderJobId}] Failed to clear cancellation`, error),
@@ -321,86 +394,99 @@ async function main() {
   new Worker(
     "assets",
     async (queueJob) => {
-      if (queueJob.name === "prepare-project-psd") {
-        const projectId = queueJob.data.projectId as string;
-        const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
-        if (!project) return;
-        const snapshot = projectDocumentSchema.parse(project.document);
-        const selectedIds = new Set(snapshot.characterIds);
-        const characterData = (await db.select().from(characters))
-          .map((row) => row.data)
-          .filter((character) => selectedIds.has(character.id));
-        const startedAt = performance.now();
-        await prepareDialoguePsdPreviews(snapshot, characterData, dataDir);
-        console.log(`[prepare:${projectId}] PSD previews ready in ${Math.round(performance.now() - startedAt)}ms`);
-        return;
+      if (renderResources.isRenderReserved()) {
+        console.log(`[asset-job:${queueJob.name}] waiting until rendering is idle`);
       }
-      const assetId = queueJob.data.assetId as string;
-      const [asset] = await db.select().from(assets).where(eq(assets.id, assetId));
-      if (!asset) throw new Error("Asset not found");
-      try {
-        if (asset.kind === "psd") {
+      await renderResources.runBackgroundWork(async () => {
+        if (queueJob.name === "prepare-project-psd") {
+          const projectId = queueJob.data.projectId as string;
+          const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+          if (!project) return;
+          const snapshot = projectDocumentSchema.parse(project.document);
+          const selectedIds = new Set(snapshot.characterIds);
+          const characterData = (await db.select().from(characters))
+            .map((row) => row.data)
+            .filter((character) => selectedIds.has(character.id));
+          const startedAt = performance.now();
+          await prepareDialoguePsdPreviews(snapshot, characterData, dataDir);
+          console.log(`[prepare:${projectId}] PSD previews ready in ${Math.round(performance.now() - startedAt)}ms`);
+          return;
+        }
+        const assetId = queueJob.data.assetId as string;
+        const [asset] = await db.select().from(assets).where(eq(assets.id, assetId));
+        if (!asset) throw new Error("Asset not found");
+        try {
+          if (asset.kind === "psd") {
+            await db
+              .update(assets)
+              .set({
+                normalizedPath: asset.originalPath,
+                status: "ready",
+              })
+              .where(eq(assets.id, assetId));
+            return;
+          }
+          const extension = asset.kind === "video" ? ".mp4" : asset.kind === "audio" ? ".m4a" : ".jpg";
+          const output = path.join(normalizedDir, `${asset.id}${extension}`);
+          const args =
+            asset.kind === "video"
+              ? [
+                  "-y",
+                  "-i",
+                  asset.originalPath,
+                  "-map_metadata",
+                  "0",
+                  "-c:v",
+                  "libx264",
+                  "-preset",
+                  "veryfast",
+                  "-g",
+                  String(EDITOR_CONSTANTS.fps),
+                  "-keyint_min",
+                  String(EDITOR_CONSTANTS.fps),
+                  "-sc_threshold",
+                  "0",
+                  "-pix_fmt",
+                  "yuv420p",
+                  "-c:a",
+                  "aac",
+                  "-movflags",
+                  "+faststart",
+                  output,
+                ]
+              : asset.kind === "audio"
+                ? ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-vn", "-c:a", "aac", "-b:a", "192k", output]
+                : ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-q:v", "2", output];
+          await execFileAsync("ffmpeg", args);
+          const { stdout } = await execFileAsync("ffprobe", [
+            "-v",
+            "error",
+            "-show_entries",
+            "stream=width,height,duration:format=duration",
+            "-of",
+            "json",
+            output,
+          ]);
           await db
             .update(assets)
             .set({
-              normalizedPath: asset.originalPath,
+              normalizedPath: output,
               status: "ready",
+              metadata: JSON.parse(stdout),
+              error: null,
             })
             .where(eq(assets.id, assetId));
-          return;
+        } catch (error) {
+          await db
+            .update(assets)
+            .set({
+              status: "error",
+              error: error instanceof Error ? error.message : String(error),
+            })
+            .where(eq(assets.id, assetId));
+          throw error;
         }
-        const extension = asset.kind === "video" ? ".mp4" : asset.kind === "audio" ? ".m4a" : ".jpg";
-        const output = path.join(normalizedDir, `${asset.id}${extension}`);
-        const args =
-          asset.kind === "video"
-            ? [
-                "-y",
-                "-i",
-                asset.originalPath,
-                "-map_metadata",
-                "0",
-                "-c:v",
-                "libx264",
-                "-pix_fmt",
-                "yuv420p",
-                "-c:a",
-                "aac",
-                "-movflags",
-                "+faststart",
-                output,
-              ]
-            : asset.kind === "audio"
-              ? ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-vn", "-c:a", "aac", "-b:a", "192k", output]
-              : ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-q:v", "2", output];
-        await execFileAsync("ffmpeg", args);
-        const { stdout } = await execFileAsync("ffprobe", [
-          "-v",
-          "error",
-          "-show_entries",
-          "stream=width,height,duration:format=duration",
-          "-of",
-          "json",
-          output,
-        ]);
-        await db
-          .update(assets)
-          .set({
-            normalizedPath: output,
-            status: "ready",
-            metadata: JSON.parse(stdout),
-            error: null,
-          })
-          .where(eq(assets.id, assetId));
-      } catch (error) {
-        await db
-          .update(assets)
-          .set({
-            status: "error",
-            error: error instanceof Error ? error.message : String(error),
-          })
-          .where(eq(assets.id, assetId));
-        throw error;
-      }
+      });
     },
     { connection: redis, concurrency: 1 },
   );

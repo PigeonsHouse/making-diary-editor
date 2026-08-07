@@ -3,8 +3,10 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { initializeCanvas, readPsd, type Layer } from "ag-psd";
 import { PNG } from "pngjs";
+import sharp from "sharp";
 
-const PSD_RENDER_VERSION = "multiply-v1";
+const PSD_PREVIEW_MAX_DIMENSION = 1200;
+const PSD_RENDER_VERSION = `multiply-v2-max-${PSD_PREVIEW_MAX_DIMENSION}`;
 
 initializeCanvas(
   () => {
@@ -139,8 +141,23 @@ export async function renderPsdPreview(
   };
   walk(psd.children ?? [], [], true);
   await mkdir(outputDir, { recursive: true });
-  const png = new PNG({ width: psd.width, height: psd.height });
-  png.data = Buffer.from(output);
-  await writeFile(outputPath, PNG.sync.write(png));
+  const scale = Math.min(1, PSD_PREVIEW_MAX_DIMENSION / Math.max(psd.width, psd.height));
+  if (scale < 1) {
+    await sharp(Buffer.from(output), {
+      raw: { width: psd.width, height: psd.height, channels: 4 },
+    })
+      .resize({
+        width: Math.round(psd.width * scale),
+        height: Math.round(psd.height * scale),
+        fit: "fill",
+        kernel: sharp.kernel.lanczos3,
+      })
+      .png({ compressionLevel: 6, adaptiveFiltering: true })
+      .toFile(outputPath);
+  } else {
+    const png = new PNG({ width: psd.width, height: psd.height });
+    png.data = Buffer.from(output);
+    await writeFile(outputPath, PNG.sync.write(png));
+  }
   return hash;
 }

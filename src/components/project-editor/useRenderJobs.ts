@@ -2,30 +2,53 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export type RenderJobStatus = "queued" | "rendering" | "cancelling" | "completed" | "failed" | "cancelled";
+export type RenderJobStatus =
+  "queued" | "preparing" | "rendering" | "cancelling" | "completed" | "failed" | "cancelled";
 
 export type RenderJobSummary = {
   id: string;
   projectId: string;
   status: RenderJobStatus;
   progress: number;
+  etaMs: number | null;
   error: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 const isActive = (job: RenderJobSummary) =>
-  job.status === "queued" || job.status === "rendering" || job.status === "cancelling";
+  job.status === "queued" || job.status === "preparing" || job.status === "rendering" || job.status === "cancelling";
 
 const sortNewestFirst = (jobs: RenderJobSummary[]) =>
   [...jobs].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
 
+export const formatRenderProgress = (progress: number) => `${progress.toFixed(1)}%`;
+
+export function formatRenderEta(etaMs: number | null) {
+  if (etaMs === null || !Number.isFinite(etaMs) || etaMs <= 0) return null;
+  const totalSeconds = Math.max(1, Math.ceil(etaMs / 1_000));
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `残り約${hours}時間${minutes}分`;
+  if (minutes > 0) return `残り約${minutes}分${seconds}秒`;
+  return `残り約${seconds}秒`;
+}
+
+export function formatRenderProgressDetails(job: RenderJobSummary) {
+  const progress = formatRenderProgress(job.progress);
+  const eta = job.status === "rendering" ? formatRenderEta(job.etaMs) : null;
+  return eta ? `${progress}・${eta}` : progress;
+}
+
 export function getRenderStatusText(job: RenderJobSummary) {
   switch (job.status) {
     case "queued":
-      return `待機中 ${job.progress}%`;
+      return `待機中 ${formatRenderProgressDetails(job)}`;
+    case "preparing":
+      return "レンダリング準備中…（ETA計算前）";
     case "rendering":
-      return `レンダリング中 ${job.progress}%`;
+      return `レンダリング中 ${formatRenderProgressDetails(job)}`;
     case "cancelling":
       return "中断処理中…";
     case "completed":

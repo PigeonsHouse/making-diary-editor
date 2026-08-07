@@ -14,6 +14,9 @@ importers:
       '@remotion/bundler':
         specifier: 4.0.499
         version: 4.0.499(@swc/helpers@0.5.15)(lightningcss@1.33.0)(postcss@8.5.23)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@remotion/media':
+        specifier: 4.0.499
+        version: 4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@remotion/player':
         specifier: 4.0.499
         version: 4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -50,6 +53,9 @@ importers:
       remotion:
         specifier: 4.0.499
         version: 4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      sharp:
+        specifier: 0.34.5
+        version: 0.34.5
       zod:
         specifier: ^4.3.6
         version: 4.4.3
@@ -909,6 +915,12 @@ packages:
 
   '@remotion/media-utils@4.0.499':
     resolution: {integrity: sha512-XqCX58ZwI80YM9CqzasKYeCVGRaINMhRvaCQ4H953PD+pRkTxk3bFcx97x4oj0Y0KjGDWnBvzsa5Tt0Jx7JUBA==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@remotion/media@4.0.499':
+    resolution: {integrity: sha512-X7YKF/J62bqUxmuPQWlWLbsxDEKiVa8PVhQSO/kQRQQxTpiUgBLnML1LTKlYx0dVW56CKUZEeI86hZAxLIy9fA==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -2548,8 +2560,7 @@ snapshots:
 
   '@fontsource-variable/noto-sans-jp@5.2.10': {}
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.34.5':
     optionalDependencies:
@@ -2828,6 +2839,14 @@ snapshots:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
       remotion: 4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+
+  '@remotion/media@4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      mediabunny: 1.50.8
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      remotion: 4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zod: 4.4.3
 
   '@remotion/player@4.0.499(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
@@ -3329,8 +3348,7 @@ snapshots:
 
   denque@2.1.0: {}
 
-  detect-libc@2.1.2:
-    optional: true
+  detect-libc@2.1.2: {}
 
   drizzle-kit@0.31.8:
     dependencies:
@@ -3860,7 +3878,6 @@ snapshots:
       '@img/sharp-win32-arm64': 0.34.5
       '@img/sharp-win32-ia32': 0.34.5
       '@img/sharp-win32-x64': 0.34.5
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

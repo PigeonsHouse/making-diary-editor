@@ -29,7 +29,10 @@ export async function POST(request: Request) {
         .select()
         .from(renderJobs)
         .where(
-          and(eq(renderJobs.projectId, projectId), inArray(renderJobs.status, ["queued", "rendering", "cancelling"])),
+          and(
+            eq(renderJobs.projectId, projectId),
+            inArray(renderJobs.status, ["queued", "preparing", "rendering", "cancelling"]),
+          ),
         )
         .limit(1);
       if (activeJob) return { kind: "active" as const, job: activeJob };
@@ -78,6 +81,7 @@ export async function POST(request: Request) {
         .update(renderJobs)
         .set({
           status: "failed",
+          etaMs: null,
           error: error instanceof Error ? error.message : String(error),
           updatedAt: new Date(),
         })
@@ -97,6 +101,7 @@ export async function GET(request: Request) {
     projectId: renderJobs.projectId,
     status: renderJobs.status,
     progress: renderJobs.progress,
+    etaMs: renderJobs.etaMs,
     error: renderJobs.error,
     createdAt: renderJobs.createdAt,
     updatedAt: renderJobs.updatedAt,

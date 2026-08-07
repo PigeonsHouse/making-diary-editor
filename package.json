@@ -19,6 +19,7 @@
   "dependencies": {
     "@fontsource-variable/noto-sans-jp": "5.2.10",
     "@remotion/bundler": "4.0.499",
+    "@remotion/media": "4.0.499",
     "@remotion/player": "4.0.499",
     "@remotion/renderer": "4.0.499",
     "ag-psd": "^31.0.2",
@@ -31,6 +32,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "remotion": "4.0.499",
+    "sharp": "0.34.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import { db } from "./db";
 import { appSettings, renderJobs } from "./db/schema";
 
 const RENDER_CACHE_VERSION = "diary-video-h264-crf15-v2";
+const RENDER_IMPLEMENTATION_VERSION = "remotion-media-psd1200-v3";
 const CACHE_KEY_PREFIX = "render-cache:";
 
 type RenderCacheEntry = {
@@ -26,6 +27,7 @@ export function stableSerialize(value: unknown): string {
 export function createRenderSignature(project: ProjectDocument, characters: Character[]) {
   const orderedCharacters = [...characters].sort((left, right) => left.id.localeCompare(right.id));
   return createHash("sha256")
+    .update(RENDER_IMPLEMENTATION_VERSION)
     .update(process.env.RENDER_CACHE_VERSION ?? RENDER_CACHE_VERSION)
     .update(stableSerialize({ project, characters: orderedCharacters }))
     .digest("hex");

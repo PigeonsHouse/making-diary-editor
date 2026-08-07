@@ -18,7 +18,7 @@ export async function DELETE(_: Request, context: Context) {
       await requestRenderCancellation(id);
       return NextResponse.json(current);
     }
-    if (!["queued", "rendering"].includes(current.status)) {
+    if (!["queued", "preparing", "rendering"].includes(current.status)) {
       return NextResponse.json({ error: "このレンダリングは中断できません", job: current }, { status: 409 });
     }
 
@@ -35,12 +35,13 @@ export async function DELETE(_: Request, context: Context) {
       }
     }
 
-    const stoppedBeforeExecution = removedFromQueue || (!queueJob && current.status === "queued");
+    const stoppedBeforeExecution =
+      removedFromQueue || (!queueJob && (current.status === "queued" || current.status === "preparing"));
     const nextStatus = stoppedBeforeExecution ? "cancelled" : "cancelling";
     const [cancelledOrCancelling] = await db
       .update(renderJobs)
-      .set({ status: nextStatus, error: null, updatedAt: new Date() })
-      .where(and(eq(renderJobs.id, id), inArray(renderJobs.status, ["queued", "rendering"])))
+      .set({ status: nextStatus, etaMs: null, error: null, updatedAt: new Date() })
+      .where(and(eq(renderJobs.id, id), inArray(renderJobs.status, ["queued", "preparing", "rendering"])))
       .returning();
     if (stoppedBeforeExecution) await clearRenderCancellation(id);
     if (cancelledOrCancelling) return NextResponse.json(cancelledOrCancelling);

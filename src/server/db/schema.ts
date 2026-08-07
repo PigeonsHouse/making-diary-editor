@@ -1,4 +1,4 @@
-import { index, jsonb, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, integer, pgTable, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { Character, ProjectDocument } from "@/domain/types";
 
 export const projects = pgTable("projects", {
@@ -41,7 +41,8 @@ export const renderJobs = pgTable("render_jobs", {
     .notNull()
     .references(() => projects.id),
   status: text("status").notNull().default("queued"),
-  progress: integer("progress").notNull().default(0),
+  progress: real("progress").notNull().default(0),
+  etaMs: integer("eta_ms"),
   snapshot: jsonb("snapshot").$type<ProjectDocument>().notNull(),
   outputPath: text("output_path"),
   error: text("error"),

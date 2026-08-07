@@ -1,4 +1,4 @@
-import type { RenderJobSummary } from "./useRenderJobs";
+import { formatRenderProgressDetails, type RenderJobSummary } from "./useRenderJobs";
 
 const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
   year: "numeric",
@@ -11,6 +11,7 @@ const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
 
 const statusLabels: Record<RenderJobSummary["status"], string> = {
   queued: "待機中",
+  preparing: "準備中",
   rendering: "レンダリング中",
   cancelling: "中断中",
   completed: "完了",
@@ -56,14 +57,14 @@ export function RenderHistory({
               <div>
                 <span className={`render-status ${job.status}`}>{statusLabels[job.status]}</span>
                 {job.status === "queued" || job.status === "rendering" || job.status === "cancelling" ? (
-                  <span className="render-progress">{job.progress}%</span>
+                  <span className="render-progress">{formatRenderProgressDetails(job)}</span>
                 ) : null}
               </div>
               <time dateTime={job.createdAt}>{formatDate(job.createdAt)}</time>
               {job.status === "failed" && job.error ? <p>{job.error}</p> : null}
             </div>
             {job.status === "completed" ? <RenderDownloadLink job={job} compact /> : null}
-            {job.status === "queued" || job.status === "rendering" ? (
+            {job.status === "queued" || job.status === "preparing" || job.status === "rendering" ? (
               <button
                 className="secondary render-cancel"
                 disabled={cancellingId !== null}

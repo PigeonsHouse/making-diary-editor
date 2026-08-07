@@ -31,6 +31,8 @@ export async function GET(request: Request, context: Context) {
     "content-type": contentType,
     "cache-control": "public, max-age=31536000, immutable",
     "accept-ranges": "bytes",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "accept-ranges, content-length, content-range",
   };
 
   if (supportsRange && rangeHeader && !range) {

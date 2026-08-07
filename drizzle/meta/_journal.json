@@ -15,6 +15,20 @@
       "when": 1785861373361,
       "tag": "0001_asset_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786126572869,
+      "tag": "0002_render_progress_decimal",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786126823518,
+      "tag": "0003_render_eta",
+      "breakpoints": true
     }
   ]
 }

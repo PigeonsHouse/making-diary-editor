@@ -8,7 +8,18 @@ import { mapWithConcurrency } from "./async-map";
 import { getPsdConcurrency } from "./render-config";
 
 export async function prepareDialoguePsdPreviews(project: ProjectDocument, characters: Character[], dataDir: string) {
-  const specs = createDialoguePsdPreviewSpecs(project, characters);
+  const specs = [
+    ...createDialoguePsdPreviewSpecs(project, characters),
+    ...characters
+      .filter((character) => character.psdAssetId)
+      .map((character) => ({
+        key: `character:${character.id}`,
+        assetId: character.psdAssetId!,
+        filters: character.psdFilters,
+        selections: character.psdDefaults,
+        dialogueIds: [`character:${character.id}`],
+      })),
+  ];
   const urls: Record<string, string> = {};
   if (specs.length === 0) return urls;
 

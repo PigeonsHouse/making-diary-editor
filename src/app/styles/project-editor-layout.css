@@ -124,6 +124,7 @@
   font-size: 10px;
   font-weight: 800;
 }
+.render-status.preparing,
 .render-status.rendering {
   color: #2843b2;
   background: #e8ecff;
