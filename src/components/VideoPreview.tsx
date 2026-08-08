@@ -1,6 +1,7 @@
 "use client";
 
 import { Player } from "@remotion/player";
+import { createAssetTransparencyMap } from "@/domain/asset-transparency";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import type { Character, ProjectDocument } from "@/domain/types";
 import { DiaryVideo, getVideoDuration } from "@/remotion/DiaryVideo";
@@ -23,12 +24,13 @@ export function VideoPreview({
       ? calculatedDurationInFrames
       : EDITOR_CONSTANTS.fps;
   const assetVolumes = Object.fromEntries(assets.map((asset) => [asset.id, asset.defaultVolume]));
+  const assetTransparency = createAssetTransparencyMap(assets);
 
   return (
     <div className="preview-shell">
       <Player
         component={DiaryVideo}
-        inputProps={{ project, characters, dialoguePsdPreviewUrls, assetVolumes }}
+        inputProps={{ project, characters, dialoguePsdPreviewUrls, assetVolumes, assetTransparency }}
         durationInFrames={durationInFrames}
         fps={EDITOR_CONSTANTS.fps}
         compositionWidth={EDITOR_CONSTANTS.width}

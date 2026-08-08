@@ -2,11 +2,12 @@ import { createHash } from "node:crypto";
 import { access } from "node:fs/promises";
 import { eq } from "drizzle-orm";
 import type { Character, ProjectDocument } from "@/domain/types";
+import type { AssetTransparencyMap } from "@/domain/asset-transparency";
 import { db } from "./db";
 import { appSettings, renderJobs } from "./db/schema";
 
 const RENDER_CACHE_VERSION = "diary-video-h264-crf15-v2";
-const RENDER_IMPLEMENTATION_VERSION = "remotion-media-psd1200-asset-volume-v4";
+const RENDER_IMPLEMENTATION_VERSION = "remotion-media-chroma-key-v6";
 const CACHE_KEY_PREFIX = "render-cache:";
 
 type RenderCacheEntry = {
@@ -28,12 +29,13 @@ export function createRenderSignature(
   project: ProjectDocument,
   characters: Character[],
   assetVolumes: Readonly<Record<string, number>> = {},
+  assetTransparency: AssetTransparencyMap = {},
 ) {
   const orderedCharacters = [...characters].sort((left, right) => left.id.localeCompare(right.id));
   return createHash("sha256")
     .update(RENDER_IMPLEMENTATION_VERSION)
     .update(process.env.RENDER_CACHE_VERSION ?? RENDER_CACHE_VERSION)
-    .update(stableSerialize({ project, characters: orderedCharacters, assetVolumes }))
+    .update(stableSerialize({ project, characters: orderedCharacters, assetVolumes, assetTransparency }))
     .digest("hex");
 }
 

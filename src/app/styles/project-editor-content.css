@@ -81,6 +81,32 @@
 .asset-control > label input {
   width: 54px;
 }
+.asset-control > .chroma-key-toggle input {
+  width: auto;
+}
+.chroma-key-controls {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-left: 27px;
+}
+.chroma-key-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.chroma-key-controls input[type="color"] {
+  width: 38px;
+  height: 29px;
+  padding: 2px;
+}
+.chroma-key-controls input[type="number"] {
+  width: 68px;
+}
 .video-asset-controls {
   flex: 1 1 100%;
   display: flex;

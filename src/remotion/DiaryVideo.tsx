@@ -11,6 +11,7 @@ import {
   type AssetVolumeMap,
   type AudioScene,
 } from "@/domain/audio";
+import type { AssetTransparencyMap } from "@/domain/asset-transparency";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { layoutSubtitleText } from "@/domain/subtitle-layout";
 import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
@@ -27,6 +28,7 @@ type Props = {
   defaultEndHold?: number;
   dialoguePsdPreviewUrls?: Record<string, string>;
   assetVolumes?: AssetVolumeMap;
+  assetTransparency?: AssetTransparencyMap;
 };
 
 const secondsToFrames = (seconds: number, fps: number) => {
@@ -35,7 +37,14 @@ const secondsToFrames = (seconds: number, fps: number) => {
   return Number.isSafeInteger(frames) && frames > 0 ? frames : 1;
 };
 
-export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPreviewUrls, assetVolumes = {} }: Props) {
+export function DiaryVideo({
+  project,
+  characters,
+  defaultEndHold,
+  dialoguePsdPreviewUrls,
+  assetVolumes = {},
+  assetTransparency = {},
+}: Props) {
   const { fps } = useVideoConfig();
   const { sequences, audioScenes } = useMemo(() => {
     let cursor = 0;
@@ -84,6 +93,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
             defaultEndHold={defaultEndHold}
             dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
             assetVolumes={assetVolumes}
+            assetTransparency={assetTransparency}
           />
         </Sequence>,
       );
@@ -96,7 +106,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
       cursor += duration;
     });
     return { sequences: nextSequences, audioScenes: nextAudioScenes };
-  }, [assetVolumes, characters, defaultEndHold, dialoguePsdPreviewUrls, fps, project]);
+  }, [assetTransparency, assetVolumes, characters, defaultEndHold, dialoguePsdPreviewUrls, fps, project]);
 
   const bgmSegments = useMemo(() => groupContinuousBgm(audioScenes), [audioScenes]);
   const sceneIntroSoundEffects = useMemo(
@@ -141,6 +151,7 @@ function DiaryScene({
   defaultEndHold,
   dialoguePsdPreviewUrls,
   assetVolumes = {},
+  assetTransparency = {},
 }: Props & { diary: DiaryEntry }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -200,6 +211,7 @@ function DiaryScene({
         blockDurationSeconds={activeBlockDurationSeconds}
         blockDurationInFrames={secondsToFrames(activeBlockDurationSeconds, fps)}
         assetVolumes={assetVolumes}
+        assetTransparency={assetTransparency}
       />
       <Avatars
         project={project}

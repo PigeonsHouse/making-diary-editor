@@ -6,6 +6,7 @@ import { makeCancelSignal, openBrowser, renderMedia } from "@remotion/renderer";
 import { Worker } from "bullmq";
 import { and, eq, inArray } from "drizzle-orm";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
+import { createAssetTransparencyMap } from "@/domain/asset-transparency";
 import { characterSchema, projectDocumentSchema } from "@/domain/types";
 import { getVideoDuration } from "@/domain/video-duration";
 import { db } from "@/server/db";
@@ -39,6 +40,12 @@ import { createRenderDiagnostics } from "./render-diagnostics";
 import { createFrameDescription } from "./render-frame-description";
 import { createRenderResourceCoordinator } from "./render-resource-coordinator";
 import { prepareDialoguePsdPreviews } from "./prepare-psd";
+import {
+  getAssetNormalizationArgs,
+  getNormalizedAssetExtension,
+  probeHasAlpha,
+  type NormalizableAssetKind,
+} from "./asset-normalization";
 
 const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const rendersDir = path.join(dataDir, "renders");
@@ -162,10 +169,21 @@ async function main() {
                   asset.defaultVolume,
                 ]),
               );
+        const queuedAssetTransparency = queueJob.data.assetTransparency;
+        const assetTransparency =
+          queuedAssetTransparency &&
+          typeof queuedAssetTransparency === "object" &&
+          !Array.isArray(queuedAssetTransparency)
+            ? Object.fromEntries(
+                Object.entries(queuedAssetTransparency).filter(
+                  (entry): entry is [string, boolean] => entry[1] === true,
+                ),
+              )
+            : createAssetTransparencyMap(await db.select({ id: assets.id, metadata: assets.metadata }).from(assets));
         const renderSignature =
           typeof queueJob.data.renderSignature === "string"
             ? queueJob.data.renderSignature
-            : createRenderSignature(snapshot, characterData, assetVolumes);
+            : createRenderSignature(snapshot, characterData, assetVolumes, assetTransparency);
 
         const psdStartedAt = performance.now();
         const dialoguePsdPreviewUrls = await prepareDialoguePsdPreviews(snapshot, characterData, dataDir);
@@ -182,6 +200,7 @@ async function main() {
           characters: renderCharacters,
           dialoguePsdPreviewUrls,
           assetVolumes,
+          assetTransparency,
         });
         const [serveUrl, browserRuntime] = await runtimeWarmup;
         await throwIfCancellationRequested();
@@ -441,43 +460,41 @@ async function main() {
               .where(eq(assets.id, assetId));
             return;
           }
-          const extension = asset.kind === "video" ? ".mp4" : asset.kind === "audio" ? ".m4a" : ".jpg";
+          const kind = asset.kind as NormalizableAssetKind;
+          const inputProbe =
+            kind === "image" || kind === "video"
+              ? JSON.parse(
+                  (
+                    await execFileAsync("ffprobe", [
+                      "-v",
+                      "error",
+                      "-select_streams",
+                      "v:0",
+                      "-show_entries",
+                      "stream=pix_fmt:stream_tags=alpha_mode",
+                      "-of",
+                      "json",
+                      asset.originalPath,
+                    ])
+                  ).stdout,
+                )
+              : null;
+          const hasAlpha = probeHasAlpha(inputProbe);
+          const extension = getNormalizedAssetExtension(kind, hasAlpha);
           const output = path.join(normalizedDir, `${asset.id}${extension}`);
-          const args =
-            asset.kind === "video"
-              ? [
-                  "-y",
-                  "-i",
-                  asset.originalPath,
-                  "-map_metadata",
-                  "0",
-                  "-c:v",
-                  "libx264",
-                  "-preset",
-                  "veryfast",
-                  "-g",
-                  String(EDITOR_CONSTANTS.fps),
-                  "-keyint_min",
-                  String(EDITOR_CONSTANTS.fps),
-                  "-sc_threshold",
-                  "0",
-                  "-pix_fmt",
-                  "yuv420p",
-                  "-c:a",
-                  "aac",
-                  "-movflags",
-                  "+faststart",
-                  output,
-                ]
-              : asset.kind === "audio"
-                ? ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-vn", "-c:a", "aac", "-b:a", "192k", output]
-                : ["-y", "-i", asset.originalPath, "-map_metadata", "0", "-q:v", "2", output];
+          const args = getAssetNormalizationArgs({
+            kind,
+            input: asset.originalPath,
+            output,
+            fps: EDITOR_CONSTANTS.fps,
+            hasAlpha,
+          });
           await execFileAsync("ffmpeg", args);
           const { stdout } = await execFileAsync("ffprobe", [
             "-v",
             "error",
             "-show_entries",
-            "stream=width,height,duration:format=duration",
+            "stream=width,height,duration,pix_fmt:stream_tags=alpha_mode:format=duration",
             "-of",
             "json",
             output,
@@ -487,7 +504,7 @@ async function main() {
             .set({
               normalizedPath: output,
               status: "ready",
-              metadata: JSON.parse(stdout),
+              metadata: { ...JSON.parse(stdout), hasAlpha },
               error: null,
             })
             .where(eq(assets.id, assetId));

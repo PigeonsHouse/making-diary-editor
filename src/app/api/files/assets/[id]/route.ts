@@ -15,12 +15,15 @@ export async function GET(request: Request, context: Context) {
   if (!asset?.normalizedPath || asset.status !== "ready") {
     return NextResponse.json({ error: "素材を利用できません" }, { status: 404 });
   }
+  const normalizedExtension = asset.normalizedPath.toLowerCase();
   const contentType =
     asset.kind === "video"
-      ? "video/mp4"
+      ? normalizedExtension.endsWith(".webm")
+        ? "video/webm"
+        : "video/mp4"
       : asset.kind === "audio"
         ? "audio/mp4"
-        : asset.normalizedPath.endsWith(".png")
+        : normalizedExtension.endsWith(".png")
           ? "image/png"
           : "image/jpeg";
   const fileSize = (await stat(asset.normalizedPath)).size;

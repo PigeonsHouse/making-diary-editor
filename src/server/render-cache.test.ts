@@ -39,4 +39,12 @@ describe("createRenderSignature", () => {
       createRenderSignature(project, [], { [assetId]: 0.5 }),
     );
   });
+
+  it("changes when a referenced asset gains an alpha channel", () => {
+    const project = createProject("signature-test");
+    const assetId = "00000000-0000-4000-8000-000000000001";
+    expect(createRenderSignature(project, [], {}, {})).not.toBe(
+      createRenderSignature(project, [], {}, { [assetId]: true }),
+    );
+  });
 });

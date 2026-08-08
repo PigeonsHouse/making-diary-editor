@@ -38,6 +38,12 @@ describe("audio setting defaults", () => {
     };
     expect(assetSettingsSchema.parse({ ...videoBase, volume: 1 }).volumeOverride).toBeNull();
     expect(assetSettingsSchema.parse({ ...videoBase, volume: 0.65 }).volumeOverride).toBe(0.65);
+    expect(assetSettingsSchema.parse(videoBase).chromaKey).toEqual({
+      enabled: false,
+      color: "#00ff00",
+      similarity: 0.15,
+      smoothness: 0.08,
+    });
   });
 
   it("adds project audio defaults to existing documents", () => {

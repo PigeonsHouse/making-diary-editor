@@ -120,6 +120,12 @@ export function BlockEditor({
                     displayArea: "above-dialogue",
                     sourceDurationSeconds: asset.kind === "video" ? getAssetDurationSeconds(asset) : null,
                     trim: { top: 0, right: 0, bottom: 0, left: 0 },
+                    chromaKey: {
+                      enabled: false,
+                      color: "#00ff00",
+                      similarity: 0.15,
+                      smoothness: 0.08,
+                    },
                     startSeconds: 0,
                     endSeconds: null,
                     volumeOverride: null,
@@ -170,6 +176,64 @@ export function BlockEditor({
                 />
               </label>
             ))}
+            <label className="chroma-key-toggle">
+              <input
+                type="checkbox"
+                checked={block.asset.chromaKey.enabled}
+                onChange={(event) =>
+                  updateBlock((draft) => {
+                    draft.asset!.chromaKey.enabled = event.target.checked;
+                  })
+                }
+              />
+              クロマキー
+            </label>
+            {block.asset.chromaKey.enabled ? (
+              <div className="chroma-key-controls">
+                <label>
+                  キー色
+                  <input
+                    type="color"
+                    value={block.asset.chromaKey.color}
+                    onChange={(event) =>
+                      updateBlock((draft) => {
+                        draft.asset!.chromaKey.color = event.target.value;
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  許容差
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={block.asset.chromaKey.similarity}
+                    onChange={(event) =>
+                      updateBlock((draft) => {
+                        draft.asset!.chromaKey.similarity = Math.min(1, Math.max(0, Number(event.target.value)));
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  境界ぼかし
+                  <input
+                    type="number"
+                    min="0.001"
+                    max="1"
+                    step="0.01"
+                    value={block.asset.chromaKey.smoothness}
+                    onChange={(event) =>
+                      updateBlock((draft) => {
+                        draft.asset!.chromaKey.smoothness = Math.min(1, Math.max(0.001, Number(event.target.value)));
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            ) : null}
             {block.asset.type === "video" ? (
               <VideoAssetControls
                 asset={block.asset}

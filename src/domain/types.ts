@@ -94,6 +94,17 @@ export const assetSettingsSchema = z.preprocess(
       bottom: z.number().nonnegative().default(0),
       left: z.number().nonnegative().default(0),
     }),
+    chromaKey: z
+      .object({
+        enabled: z.boolean().default(false),
+        color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .default("#00ff00"),
+        similarity: z.number().min(0).max(1).default(0.15),
+        smoothness: z.number().min(0.001).max(1).default(0.08),
+      })
+      .default({ enabled: false, color: "#00ff00", similarity: 0.15, smoothness: 0.08 }),
     startSeconds: z.number().nonnegative().default(0),
     endSeconds: z.number().positive().nullable().default(null),
     volumeOverride: z.number().min(0).nullable().default(null),
