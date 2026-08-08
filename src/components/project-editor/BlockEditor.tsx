@@ -122,7 +122,7 @@ export function BlockEditor({
                     trim: { top: 0, right: 0, bottom: 0, left: 0 },
                     startSeconds: 0,
                     endSeconds: null,
-                    volume: 1,
+                    volumeOverride: null,
                     shortageMode: "freeze",
                     fadeOutSeconds: null,
                   }
@@ -173,6 +173,7 @@ export function BlockEditor({
             {block.asset.type === "video" ? (
               <VideoAssetControls
                 asset={block.asset}
+                assetDefaultVolume={assets.find((asset) => asset.id === block.asset?.assetId)?.defaultVolume ?? 1}
                 blockDurationSeconds={blockDurationSeconds}
                 updateAsset={(recipe) =>
                   updateBlock((draft) => {

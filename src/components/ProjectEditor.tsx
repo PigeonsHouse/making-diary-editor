@@ -319,7 +319,7 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
           {activeTab === "thumbnail" ? (
             <ThumbnailPreview thumbnail={project.thumbnail} characters={characters} assets={assets} />
           ) : (
-            <VideoPreview key={activeTab} project={previewProject} characters={characters} />
+            <VideoPreview key={activeTab} project={previewProject} characters={characters} assets={assets} />
           )}
           <div className="preview-meta">
             <span>1920 × 1080</span>

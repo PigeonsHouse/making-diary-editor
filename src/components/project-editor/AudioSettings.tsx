@@ -1,6 +1,7 @@
 "use client";
 
 import type { AudioClip, AudioOverride, ProjectAudioSettings } from "@/domain/types";
+import { AudioVolumeSlider } from "../AudioVolumeSlider";
 import type { AssetRow } from "./types";
 
 const assetUrl = (assetId: string) => `/api/files/assets/${assetId}`;
@@ -72,7 +73,7 @@ function AudioClipEditor({
           value={value?.assetId ?? ""}
           onChange={(event) => {
             const asset = audioAssets.find((item) => item.id === event.target.value);
-            onChange(asset ? { assetId: asset.id, url: assetUrl(asset.id), volume: 1 } : null);
+            onChange(asset ? { assetId: asset.id, url: assetUrl(asset.id), volumeOverride: null } : null);
           }}
         >
           <option value="">{emptyLabel}</option>
@@ -83,7 +84,13 @@ function AudioClipEditor({
           ))}
         </select>
       </label>
-      {value ? <VolumeControl value={value.volume} onChange={(volume) => onChange({ ...value, volume })} /> : null}
+      {value ? (
+        <AudioVolumeSlider
+          value={value.volumeOverride}
+          defaultValue={assets.find((asset) => asset.id === value.assetId)?.defaultVolume ?? 1}
+          onChange={(volumeOverride) => onChange({ ...value, volumeOverride })}
+        />
+      ) : null}
     </div>
   );
 }
@@ -118,7 +125,7 @@ export function AudioOverrideEditor({
             if (event.target.value === "none") return onChange({ mode: "none" });
             const asset = audioAssets.find((item) => item.id === event.target.value);
             if (asset) {
-              onChange({ mode: "custom", clip: { assetId: asset.id, url: assetUrl(asset.id), volume: 1 } });
+              onChange({ mode: "custom", clip: { assetId: asset.id, url: assetUrl(asset.id), volumeOverride: null } });
             }
           }}
         >
@@ -132,27 +139,12 @@ export function AudioOverrideEditor({
         </select>
       </label>
       {value.mode === "custom" ? (
-        <VolumeControl
-          value={value.clip.volume}
-          onChange={(volume) => onChange({ mode: "custom", clip: { ...value.clip, volume } })}
+        <AudioVolumeSlider
+          value={value.clip.volumeOverride}
+          defaultValue={assets.find((asset) => asset.id === value.clip.assetId)?.defaultVolume ?? 1}
+          onChange={(volumeOverride) => onChange({ mode: "custom", clip: { ...value.clip, volumeOverride } })}
         />
       ) : null}
     </div>
-  );
-}
-
-function VolumeControl({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  return (
-    <label className="audio-volume">
-      <span>音量 {Math.round(value * 100)}%</span>
-      <input
-        type="range"
-        min="0"
-        max="2"
-        step="0.05"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-    </label>
   );
 }

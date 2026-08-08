@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Video } from "@remotion/media";
 import { AbsoluteFill, Freeze, Img, Loop, Sequence, interpolate, useCurrentFrame } from "remotion";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
+import { resolveAssetVolume, type AssetVolumeMap } from "@/domain/audio";
 import type { AssetSettings, ContentBlock } from "@/domain/types";
 import { getVideoAssetTiming, getVideoPlaybackRateError } from "@/domain/video-asset";
 
@@ -12,9 +13,16 @@ type Props = {
   blockStartFrame: number;
   blockDurationSeconds: number;
   blockDurationInFrames: number;
+  assetVolumes?: AssetVolumeMap;
 };
 
-export function AssetBackground({ block, blockStartFrame, blockDurationSeconds, blockDurationInFrames }: Props) {
+export function AssetBackground({
+  block,
+  blockStartFrame,
+  blockDurationSeconds,
+  blockDurationInFrames,
+  assetVolumes = {},
+}: Props) {
   const asset = block?.asset;
   if (!asset) return <GridBackground />;
 
@@ -22,7 +30,7 @@ export function AssetBackground({ block, blockStartFrame, blockDurationSeconds, 
     <>
       <GridBackground />
       <Sequence key={block.id} from={blockStartFrame} durationInFrames={blockDurationInFrames}>
-        <AssetFrame asset={asset} blockDurationSeconds={blockDurationSeconds} />
+        <AssetFrame asset={asset} blockDurationSeconds={blockDurationSeconds} assetVolumes={assetVolumes} />
       </Sequence>
     </>
   );
@@ -41,7 +49,15 @@ function GridBackground() {
   );
 }
 
-function AssetFrame({ asset, blockDurationSeconds }: { asset: AssetSettings; blockDurationSeconds: number }) {
+function AssetFrame({
+  asset,
+  blockDurationSeconds,
+  assetVolumes,
+}: {
+  asset: AssetSettings;
+  blockDurationSeconds: number;
+  assetVolumes: AssetVolumeMap;
+}) {
   const crop = asset.trim;
   const frameStyle: React.CSSProperties = {
     position: "absolute",
@@ -62,7 +78,12 @@ function AssetFrame({ asset, blockDurationSeconds }: { asset: AssetSettings; blo
       {asset.type === "image" ? (
         <Img src={asset.url} style={mediaStyle} />
       ) : (
-        <VideoAsset asset={asset} blockDurationSeconds={blockDurationSeconds} style={mediaStyle} />
+        <VideoAsset
+          asset={asset}
+          blockDurationSeconds={blockDurationSeconds}
+          style={mediaStyle}
+          assetVolumes={assetVolumes}
+        />
       )}
     </div>
   );
@@ -72,10 +93,12 @@ function VideoAsset({
   asset,
   blockDurationSeconds,
   style,
+  assetVolumes,
 }: {
   asset: AssetSettings;
   blockDurationSeconds: number;
   style: React.CSSProperties;
+  assetVolumes: AssetVolumeMap;
 }) {
   const frame = useCurrentFrame();
   const timing = useMemo(
@@ -113,7 +136,7 @@ function VideoAsset({
       trimBefore={timing.trimBefore}
       trimAfter={timing.trimAfter}
       playbackRate={timing.playbackRate}
-      volume={asset.volume}
+      volume={resolveAssetVolume(asset.assetId, asset.volumeOverride, assetVolumes)}
       objectFit="contain"
       style={{ ...style, objectFit: undefined, objectPosition: undefined }}
     />

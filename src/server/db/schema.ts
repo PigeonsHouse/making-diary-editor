@@ -28,6 +28,7 @@ export const assets = pgTable(
     originalPath: text("original_path").notNull(),
     normalizedPath: text("normalized_path"),
     status: text("status").notNull().default("processing"),
+    defaultVolume: real("default_volume").notNull().default(1),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
     error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

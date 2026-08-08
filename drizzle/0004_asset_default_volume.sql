@@ -1,0 +1,1 @@
+ALTER TABLE "assets" ADD COLUMN "default_volume" real DEFAULT 1 NOT NULL;

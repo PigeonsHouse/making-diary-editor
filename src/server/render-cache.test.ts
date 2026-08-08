@@ -31,4 +31,12 @@ describe("createRenderSignature", () => {
     character.name = "変更後";
     expect(createRenderSignature(project, [character])).not.toBe(before);
   });
+
+  it("changes when a referenced asset default volume changes", () => {
+    const project = createProject("signature-test");
+    const assetId = "00000000-0000-4000-8000-000000000001";
+    expect(createRenderSignature(project, [], { [assetId]: 1 })).not.toBe(
+      createRenderSignature(project, [], { [assetId]: 0.5 }),
+    );
+  });
 });

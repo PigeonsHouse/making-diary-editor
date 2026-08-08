@@ -1,10 +1,33 @@
 import type { AudioClip, AudioOverride } from "./types";
 
-export function resolveSoundEffect(projectDefault: AudioClip | null, override?: AudioOverride): AudioClip | null {
-  if (!override) return projectDefault;
-  if (override.mode === "none") return null;
-  if (override.mode === "custom") return override.clip;
-  return projectDefault;
+export type AssetVolumeMap = Readonly<Record<string, number>>;
+export type ResolvedAudioClip = Omit<AudioClip, "volumeOverride"> & { volume: number };
+
+export function resolveAssetVolume(assetId: string, volumeOverride: number | null, assetVolumes: AssetVolumeMap = {}) {
+  return volumeOverride ?? assetVolumes[assetId] ?? 1;
+}
+
+export function resolveAudioClip(clip: AudioClip, assetVolumes: AssetVolumeMap = {}): ResolvedAudioClip {
+  return {
+    assetId: clip.assetId,
+    url: clip.url,
+    volume: resolveAssetVolume(clip.assetId, clip.volumeOverride, assetVolumes),
+  };
+}
+
+export function resolveSoundEffect(
+  projectDefault: AudioClip | null,
+  override?: AudioOverride,
+  assetVolumes: AssetVolumeMap = {},
+): ResolvedAudioClip | null {
+  const clip = !override
+    ? projectDefault
+    : override.mode === "none"
+      ? null
+      : override.mode === "custom"
+        ? override.clip
+        : projectDefault;
+  return clip ? resolveAudioClip(clip, assetVolumes) : null;
 }
 
 export const resolveAudioOverride = resolveSoundEffect;
@@ -13,14 +36,14 @@ export type AudioScene = {
   key: string;
   from: number;
   duration: number;
-  bgm: AudioClip | null;
+  bgm: ResolvedAudioClip | null;
 };
 
 export type ContinuousBgmSegment = {
   key: string;
   from: number;
   duration: number;
-  clip: AudioClip;
+  clip: ResolvedAudioClip;
   volumeSections: Array<{ from: number; duration: number; volume: number }>;
 };
 

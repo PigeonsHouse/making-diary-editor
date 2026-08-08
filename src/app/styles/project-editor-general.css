@@ -531,6 +531,13 @@
   min-width: 70px;
   width: 100%;
 }
+.audio-volume-slider {
+  min-width: 190px;
+  flex: 0 1 250px;
+}
+.audio-volume-slider .voice-slider-heading {
+  grid-template-columns: minmax(52px, 1fr) 46px auto auto;
+}
 .audio-settings-help {
   margin: 0;
   color: var(--muted);
@@ -614,6 +621,9 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: #fff;
+}
+.asset-card.has-volume {
+  height: 66px;
 }
 .asset-card[draggable="true"] {
   cursor: grab;
@@ -705,6 +715,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.asset-card-info > .audio-volume-slider {
+  flex-basis: 230px;
 }
 .asset-drag-handle {
   color: #9aa3ad;

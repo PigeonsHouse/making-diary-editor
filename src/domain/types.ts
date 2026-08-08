@@ -69,30 +69,47 @@ export const dialogueSchema = z.object({
   }),
 });
 
-export const assetSettingsSchema = z.object({
-  assetId: z.string().uuid(),
-  type: z.enum(["image", "video"]),
-  url: z.string(),
-  displayArea: z.enum(["full", "above-dialogue"]).default("full"),
-  sourceDurationSeconds: z.number().positive().nullable().default(null),
-  trim: z.object({
-    top: z.number().nonnegative().default(0),
-    right: z.number().nonnegative().default(0),
-    bottom: z.number().nonnegative().default(0),
-    left: z.number().nonnegative().default(0),
-  }),
-  startSeconds: z.number().nonnegative().default(0),
-  endSeconds: z.number().positive().nullable().default(null),
-  volume: z.number().min(0).default(1),
-  shortageMode: z.enum(["loop", "freeze", "fade-out", "fit-duration"]).default("freeze"),
-  fadeOutSeconds: z.number().positive().nullable().default(null),
-});
+const migrateLegacyVolumeOverride = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  if (Object.hasOwn(record, "volumeOverride")) return value;
+  const { volume, ...rest } = record;
+  return {
+    ...rest,
+    volumeOverride: typeof volume === "number" && Number.isFinite(volume) && volume !== 1 ? volume : null,
+  };
+};
 
-export const audioClipSchema = z.object({
-  assetId: z.string().uuid(),
-  url: z.string(),
-  volume: z.number().min(0).max(2).default(1),
-});
+export const assetSettingsSchema = z.preprocess(
+  migrateLegacyVolumeOverride,
+  z.object({
+    assetId: z.string().uuid(),
+    type: z.enum(["image", "video"]),
+    url: z.string(),
+    displayArea: z.enum(["full", "above-dialogue"]).default("full"),
+    sourceDurationSeconds: z.number().positive().nullable().default(null),
+    trim: z.object({
+      top: z.number().nonnegative().default(0),
+      right: z.number().nonnegative().default(0),
+      bottom: z.number().nonnegative().default(0),
+      left: z.number().nonnegative().default(0),
+    }),
+    startSeconds: z.number().nonnegative().default(0),
+    endSeconds: z.number().positive().nullable().default(null),
+    volumeOverride: z.number().min(0).nullable().default(null),
+    shortageMode: z.enum(["loop", "freeze", "fade-out", "fit-duration"]).default("freeze"),
+    fadeOutSeconds: z.number().positive().nullable().default(null),
+  }),
+);
+
+export const audioClipSchema = z.preprocess(
+  migrateLegacyVolumeOverride,
+  z.object({
+    assetId: z.string().uuid(),
+    url: z.string(),
+    volumeOverride: z.number().min(0).nullable().default(null),
+  }),
+);
 
 export const audioOverrideSchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("inherit") }),

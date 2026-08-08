@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AudioVolumeSlider } from "../AudioVolumeSlider";
 import type { AssetRow } from "./types";
 
 type AssetScope = "shared" | "project";
@@ -30,9 +31,72 @@ export function AssetLibrary({ projectId, assets, onChanged }: Props) {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [state, setState] = useState("");
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioGainRef = useRef<GainNode | null>(null);
+  const assetsRef = useRef(assets);
+  const volumeSaveTimers = useRef(new Map<string, number>());
   const scopedAssetsUrl = `/api/assets?projectId=${encodeURIComponent(projectId)}`;
   const sharedAssets = sortAssetsByName(assets.filter((asset) => asset.projectId === null));
   const projectAssets = sortAssetsByName(assets.filter((asset) => asset.projectId === projectId));
+
+  useEffect(() => {
+    assetsRef.current = assets;
+  }, [assets]);
+
+  useEffect(
+    () => () => {
+      for (const timer of volumeSaveTimers.current.values()) window.clearTimeout(timer);
+      if (audioContextRef.current) void audioContextRef.current.close();
+    },
+    [],
+  );
+
+  const applyPreviewVolume = async (defaultVolume: number) => {
+    const player = audioPreviewRef.current;
+    if (!player) return;
+    if (!audioContextRef.current || !audioGainRef.current) {
+      const context = new AudioContext();
+      const source = context.createMediaElementSource(player);
+      const gain = context.createGain();
+      source.connect(gain);
+      gain.connect(context.destination);
+      audioContextRef.current = context;
+      audioGainRef.current = gain;
+    }
+    const context = audioContextRef.current;
+    audioGainRef.current.gain.setValueAtTime(defaultVolume, context.currentTime);
+    if (context.state === "suspended") await context.resume();
+  };
+
+  const setDefaultVolume = (assetId: string, defaultVolume: number) => {
+    const next = assetsRef.current.map((asset) => (asset.id === assetId ? { ...asset, defaultVolume } : asset));
+    assetsRef.current = next;
+    onChanged(next);
+    if (playingAudioId === assetId) void applyPreviewVolume(defaultVolume);
+
+    const previousTimer = volumeSaveTimers.current.get(assetId);
+    if (previousTimer !== undefined) window.clearTimeout(previousTimer);
+    volumeSaveTimers.current.set(
+      assetId,
+      window.setTimeout(async () => {
+        volumeSaveTimers.current.delete(assetId);
+        const response = await fetch(`/api/assets/${assetId}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ defaultVolume }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setState(body.error ?? "素材の既定音量を保存できませんでした");
+          return;
+        }
+        const updated = body as AssetRow;
+        const saved = assetsRef.current.map((asset) => (asset.id === assetId ? updated : asset));
+        assetsRef.current = saved;
+        onChanged(saved);
+      }, 350),
+    );
+  };
 
   const refreshAssets = async () => {
     const response = await fetch(scopedAssetsUrl);
@@ -143,6 +207,7 @@ export function AssetLibrary({ projectId, assets, onChanged }: Props) {
     player.src = `/api/files/assets/${asset.id}`;
     player.load();
     try {
+      await applyPreviewVolume(asset.defaultVolume);
       await player.play();
       setPlayingAudioId(asset.id);
     } catch {
@@ -243,7 +308,7 @@ export function AssetLibrary({ projectId, assets, onChanged }: Props) {
                       const isBusy = deletingId === asset.id || renamingId === asset.id || movingId === asset.id;
                       return (
                         <article
-                          className={`asset-card ${asset.status} ${draggingId === asset.id ? "dragging" : ""}`}
+                          className={`asset-card ${asset.status} ${asset.kind === "audio" || asset.kind === "video" ? "has-volume" : ""} ${draggingId === asset.id ? "dragging" : ""}`}
                           draggable={movingId === null}
                           key={asset.id}
                           onDragStart={(event) => {
@@ -320,6 +385,15 @@ export function AssetLibrary({ projectId, assets, onChanged }: Props) {
                                 ) : null}
                               </div>
                             </div>
+                            {asset.kind === "audio" || asset.kind === "video" ? (
+                              <AudioVolumeSlider
+                                label="既定音量"
+                                value={asset.defaultVolume}
+                                defaultValue={1}
+                                allowDefault={false}
+                                onChange={(defaultVolume) => setDefaultVolume(asset.id, defaultVolume ?? 1)}
+                              />
+                            ) : null}
                           </div>
                           <div className="asset-card-actions">
                             <button

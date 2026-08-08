@@ -29,6 +29,13 @@
       "when": 1786126823518,
       "tag": "0003_render_eta",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786181147016,
+      "tag": "0004_asset_default_volume",
+      "breakpoints": true
     }
   ]
 }

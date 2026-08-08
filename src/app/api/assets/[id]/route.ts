@@ -50,10 +50,11 @@ async function getAssetUsage(id: string) {
 export async function PATCH(request: Request, context: Context) {
   try {
     const { id } = await context.params;
-    const input = (await request.json()) as { projectId?: unknown; originalName?: unknown };
+    const input = (await request.json()) as { projectId?: unknown; originalName?: unknown; defaultVolume?: unknown };
     const hasProjectId = Object.hasOwn(input, "projectId");
     const hasOriginalName = Object.hasOwn(input, "originalName");
-    if (!hasProjectId && !hasOriginalName) {
+    const hasDefaultVolume = Object.hasOwn(input, "defaultVolume");
+    if (!hasProjectId && !hasOriginalName && !hasDefaultVolume) {
       return NextResponse.json({ error: "変更内容がありません" }, { status: 400 });
     }
     if (hasProjectId && !(input.projectId === null || typeof input.projectId === "string")) {
@@ -61,6 +62,12 @@ export async function PATCH(request: Request, context: Context) {
     }
     if (hasOriginalName && typeof input.originalName !== "string") {
       return NextResponse.json({ error: "素材名が不正です" }, { status: 400 });
+    }
+    if (
+      hasDefaultVolume &&
+      (typeof input.defaultVolume !== "number" || !Number.isFinite(input.defaultVolume) || input.defaultVolume < 0)
+    ) {
+      return NextResponse.json({ error: "素材の既定音量が不正です" }, { status: 400 });
     }
     const originalName = typeof input.originalName === "string" ? input.originalName.trim() : undefined;
     if (hasOriginalName && !originalName) {
@@ -72,6 +79,9 @@ export async function PATCH(request: Request, context: Context) {
 
     const targetProjectId = hasProjectId ? (input.projectId as string | null) : undefined;
     const [asset] = await db.select().from(assets).where(eq(assets.id, id));
+    if (hasDefaultVolume && asset && asset.kind !== "audio" && asset.kind !== "video") {
+      return NextResponse.json({ error: "音量を設定できるのは音声・動画素材だけです" }, { status: 400 });
+    }
     if (!asset) return NextResponse.json({ error: "素材が見つかりません" }, { status: 404 });
 
     if (targetProjectId && asset.projectId !== targetProjectId) {
@@ -100,6 +110,7 @@ export async function PATCH(request: Request, context: Context) {
       .set({
         ...(hasProjectId ? { projectId: targetProjectId } : {}),
         ...(originalName ? { originalName } : {}),
+        ...(hasDefaultVolume ? { defaultVolume: input.defaultVolume as number } : {}),
       })
       .where(eq(assets.id, id))
       .returning();

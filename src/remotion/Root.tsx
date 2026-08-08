@@ -2,7 +2,7 @@ import { Composition } from "remotion";
 import { createProject } from "@/domain/defaults";
 import { DiaryVideo, getVideoDuration } from "./DiaryVideo";
 
-const defaultProps = { project: createProject(), characters: [] };
+const defaultProps = { project: createProject(), characters: [], assetVolumes: {} };
 
 export function RemotionRoot() {
   return (

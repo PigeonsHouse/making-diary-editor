@@ -11,7 +11,7 @@ const asset = (overrides: Partial<AssetSettings> = {}): AssetSettings => ({
   trim: { top: 0, right: 0, bottom: 0, left: 0 },
   startSeconds: 2,
   endSeconds: 6,
-  volume: 1,
+  volumeOverride: null,
   shortageMode: "freeze",
   fadeOutSeconds: null,
   ...overrides,

@@ -2,16 +2,18 @@
 
 import type { AssetSettings } from "@/domain/types";
 import { getVideoAssetTiming, getVideoClipDuration, getVideoPlaybackRateError } from "@/domain/video-asset";
+import { AudioVolumeSlider } from "../AudioVolumeSlider";
 
 type Props = {
   asset: AssetSettings;
+  assetDefaultVolume: number;
   blockDurationSeconds: number;
   updateAsset: (recipe: (draft: AssetSettings) => void) => void;
 };
 
 const formatSeconds = (seconds: number) => `${seconds.toFixed(2)}秒`;
 
-export function VideoAssetControls({ asset, blockDurationSeconds, updateAsset }: Props) {
+export function VideoAssetControls({ asset, assetDefaultVolume, blockDurationSeconds, updateAsset }: Props) {
   const clipDuration = getVideoClipDuration(asset);
   const timing = getVideoAssetTiming(asset, blockDurationSeconds, 30);
   const playbackRateError = getVideoPlaybackRateError(asset, blockDurationSeconds, 30);
@@ -102,21 +104,11 @@ export function VideoAssetControls({ asset, blockDurationSeconds, updateAsset }:
         </label>
       ) : null}
 
-      <label>
-        音量
-        <input
-          type="number"
-          min="0"
-          step="0.1"
-          value={asset.volume}
-          onChange={(event) =>
-            updateAsset((draft) => {
-              const value = Number(event.target.value);
-              if (Number.isFinite(value)) draft.volume = Math.max(0, value);
-            })
-          }
-        />
-      </label>
+      <AudioVolumeSlider
+        value={asset.volumeOverride}
+        defaultValue={assetDefaultVolume}
+        onChange={(volumeOverride) => updateAsset((draft) => void (draft.volumeOverride = volumeOverride))}
+      />
 
       <small className={`video-duration-help ${playbackRateError ? "error" : ""}`}>
         {playbackRateError

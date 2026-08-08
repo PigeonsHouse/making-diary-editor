@@ -9,7 +9,11 @@ describe("project credit IDs", () => {
 
   it("only extracts IDs from used assets and removes duplicates", () => {
     const project = createProject();
-    project.audio.bgm = { assetId: "00000000-0000-4000-8000-000000000001", url: "/bgm", volume: 1 };
+    project.audio.bgm = {
+      assetId: "00000000-0000-4000-8000-000000000001",
+      url: "/bgm",
+      volumeOverride: null,
+    };
     project.diaries = [createDiary()];
     const assets = [
       { id: "00000000-0000-4000-8000-000000000001", originalName: "music_sm12_nc34.mp3" },

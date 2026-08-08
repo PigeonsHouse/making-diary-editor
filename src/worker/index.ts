@@ -148,10 +148,24 @@ async function main() {
         const characterData = queuedCharacters.success
           ? queuedCharacters.data
           : (await db.select().from(characters)).map((row) => row.data);
+        const queuedAssetVolumes = queueJob.data.assetVolumes;
+        const assetVolumes =
+          queuedAssetVolumes && typeof queuedAssetVolumes === "object" && !Array.isArray(queuedAssetVolumes)
+            ? Object.fromEntries(
+                Object.entries(queuedAssetVolumes).filter(
+                  (entry): entry is [string, number] => typeof entry[1] === "number" && Number.isFinite(entry[1]),
+                ),
+              )
+            : Object.fromEntries(
+                (await db.select({ id: assets.id, defaultVolume: assets.defaultVolume }).from(assets)).map((asset) => [
+                  asset.id,
+                  asset.defaultVolume,
+                ]),
+              );
         const renderSignature =
           typeof queueJob.data.renderSignature === "string"
             ? queueJob.data.renderSignature
-            : createRenderSignature(snapshot, characterData);
+            : createRenderSignature(snapshot, characterData, assetVolumes);
 
         const psdStartedAt = performance.now();
         const dialoguePsdPreviewUrls = await prepareDialoguePsdPreviews(snapshot, characterData, dataDir);
@@ -167,6 +181,7 @@ async function main() {
           project: snapshot,
           characters: renderCharacters,
           dialoguePsdPreviewUrls,
+          assetVolumes,
         });
         const [serveUrl, browserRuntime] = await runtimeWarmup;
         await throwIfCancellationRequested();

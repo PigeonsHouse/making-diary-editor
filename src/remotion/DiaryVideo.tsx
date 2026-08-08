@@ -8,6 +8,7 @@ import {
   groupContinuousBgm,
   resolveAudioOverride,
   resolveSoundEffect,
+  type AssetVolumeMap,
   type AudioScene,
 } from "@/domain/audio";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
@@ -25,6 +26,7 @@ type Props = {
   characters: Character[];
   defaultEndHold?: number;
   dialoguePsdPreviewUrls?: Record<string, string>;
+  assetVolumes?: AssetVolumeMap;
 };
 
 const secondsToFrames = (seconds: number, fps: number) => {
@@ -33,7 +35,7 @@ const secondsToFrames = (seconds: number, fps: number) => {
   return Number.isSafeInteger(frames) && frames > 0 ? frames : 1;
 };
 
-export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPreviewUrls }: Props) {
+export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPreviewUrls, assetVolumes = {} }: Props) {
   const { fps } = useVideoConfig();
   const { sequences, audioScenes } = useMemo(() => {
     let cursor = 0;
@@ -61,7 +63,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
         key: "wish",
         from: cursor,
         duration,
-        bgm: resolveAudioOverride(project.audio.bgm, project.wishList.bgm),
+        bgm: resolveAudioOverride(project.audio.bgm, project.wishList.bgm, assetVolumes),
       });
       cursor += duration;
     }
@@ -81,6 +83,7 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
             characters={characters}
             defaultEndHold={defaultEndHold}
             dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+            assetVolumes={assetVolumes}
           />
         </Sequence>,
       );
@@ -88,12 +91,12 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
         key: diary.id,
         from: cursor,
         duration,
-        bgm: resolveAudioOverride(project.audio.bgm, diary.bgm),
+        bgm: resolveAudioOverride(project.audio.bgm, diary.bgm, assetVolumes),
       });
       cursor += duration;
     });
     return { sequences: nextSequences, audioScenes: nextAudioScenes };
-  }, [characters, defaultEndHold, dialoguePsdPreviewUrls, fps, project]);
+  }, [assetVolumes, characters, defaultEndHold, dialoguePsdPreviewUrls, fps, project]);
 
   const bgmSegments = useMemo(() => groupContinuousBgm(audioScenes), [audioScenes]);
   const sceneIntroSoundEffects = useMemo(
@@ -103,14 +106,14 @@ export function DiaryVideo({ project, characters, defaultEndHold, dialoguePsdPre
           scene.key === "wish"
             ? project.wishList?.sceneIntroSe
             : project.diaries.find((diary) => diary.id === scene.key)?.sceneIntroSe;
-        const clip = resolveAudioOverride(project.audio.sceneIntroSe, override);
+        const clip = resolveAudioOverride(project.audio.sceneIntroSe, override, assetVolumes);
         return clip ? (
           <Sequence key={`scene-intro-${scene.key}`} from={scene.from} durationInFrames={scene.duration}>
             <Audio src={clip.url} volume={clip.volume} />
           </Sequence>
         ) : null;
       }),
-    [audioScenes, project],
+    [assetVolumes, audioScenes, project],
   );
 
   return (
@@ -137,6 +140,7 @@ function DiaryScene({
   characters,
   defaultEndHold,
   dialoguePsdPreviewUrls,
+  assetVolumes = {},
 }: Props & { diary: DiaryEntry }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -177,14 +181,14 @@ function DiaryScene({
   const contentSoundEffects = useMemo(
     () =>
       blockTimeline.map(({ block, from }) => {
-        const clip = resolveSoundEffect(project.audio.contentSe, block.entrySe);
+        const clip = resolveSoundEffect(project.audio.contentSe, block.entrySe, assetVolumes);
         return clip ? (
           <Sequence key={`entry-se-${block.id}`} from={from}>
             <Audio src={clip.url} volume={clip.volume} />
           </Sequence>
         ) : null;
       }),
-    [blockTimeline, project.audio.contentSe],
+    [assetVolumes, blockTimeline, project.audio.contentSe],
   );
 
   return (
@@ -195,6 +199,7 @@ function DiaryScene({
         blockStartFrame={blockCursor}
         blockDurationSeconds={activeBlockDurationSeconds}
         blockDurationInFrames={secondsToFrames(activeBlockDurationSeconds, fps)}
+        assetVolumes={assetVolumes}
       />
       <Avatars
         project={project}

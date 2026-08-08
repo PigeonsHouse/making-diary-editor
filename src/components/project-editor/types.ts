@@ -12,6 +12,7 @@ export type AssetRow = {
   kind: "image" | "video" | "audio" | "psd";
   originalName: string;
   status: string;
+  defaultVolume: number;
   metadata: Record<string, unknown>;
   error: string | null;
 };

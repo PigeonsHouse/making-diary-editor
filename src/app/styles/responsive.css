@@ -100,6 +100,20 @@
   .audio-volume {
     margin-left: 124px;
   }
+  .audio-volume-slider {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .asset-card.has-volume {
+    height: auto;
+    min-height: 76px;
+  }
+  .asset-card-info {
+    flex-wrap: wrap;
+  }
+  .asset-card-info > .audio-volume-slider {
+    flex-basis: 100%;
+  }
   .diary-heading > .audio-override-row,
   .asset-control > .audio-override-row {
     flex-basis: 100%;

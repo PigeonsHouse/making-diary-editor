@@ -2,8 +2,9 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { validateProject } from "@/domain/timeline";
 import { projectDocumentSchema } from "@/domain/types";
+import { getUsedAssetIds } from "@/domain/project-credit-ids";
 import { db } from "@/server/db";
-import { characters, projects, renderJobs } from "@/server/db/schema";
+import { assets, characters, projects, renderJobs } from "@/server/db/schema";
 import { apiError } from "@/server/http";
 import { renderQueue } from "@/server/queue";
 import { createRenderSignature, findCachedRender } from "@/server/render-cache";
@@ -20,7 +21,12 @@ export async function POST(request: Request) {
     if (issues.length) return NextResponse.json({ error: "レンダリング前の修正が必要です", issues }, { status: 422 });
     const selectedCharacterIds = new Set(document.characterIds);
     const characterData = allCharacterData.filter((character) => selectedCharacterIds.has(character.id));
-    const renderSignature = createRenderSignature(document, characterData);
+    const usedAssetIds = getUsedAssetIds(document, characterData);
+    const assetRows = await db.select({ id: assets.id, defaultVolume: assets.defaultVolume }).from(assets);
+    const assetVolumes = Object.fromEntries(
+      assetRows.filter((asset) => usedAssetIds.has(asset.id)).map((asset) => [asset.id, asset.defaultVolume]),
+    );
+    const renderSignature = createRenderSignature(document, characterData, assetVolumes);
     const cached = await findCachedRender(renderSignature);
     const creation = await db.transaction(async (tx) => {
       // UIだけに依存せず、複数タブや同時リクエストでもプロジェクトごとに直列化する。
@@ -69,7 +75,7 @@ export async function POST(request: Request) {
     try {
       await renderQueue.add(
         "render",
-        { renderJobId: creation.job.id, characterData, renderSignature },
+        { renderJobId: creation.job.id, characterData, assetVolumes, renderSignature },
         {
           jobId: creation.job.id,
           removeOnComplete: 50,
