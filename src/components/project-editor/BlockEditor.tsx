@@ -124,7 +124,7 @@ export function BlockEditor({
                       enabled: false,
                       color: "#00ff00",
                       similarity: 0.15,
-                      smoothness: 0.08,
+                      edgeBlur: 2,
                     },
                     startSeconds: 0,
                     endSeconds: null,
@@ -218,16 +218,16 @@ export function BlockEditor({
                   />
                 </label>
                 <label>
-                  境界ぼかし
+                  境界ぼかし(px)
                   <input
                     type="number"
-                    min="0.001"
-                    max="1"
-                    step="0.01"
-                    value={block.asset.chromaKey.smoothness}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={block.asset.chromaKey.edgeBlur}
                     onChange={(event) =>
                       updateBlock((draft) => {
-                        draft.asset!.chromaKey.smoothness = Math.min(1, Math.max(0.001, Number(event.target.value)));
+                        draft.asset!.chromaKey.edgeBlur = Math.min(100, Math.max(0, Number(event.target.value)));
                       })
                     }
                   />

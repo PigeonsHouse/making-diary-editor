@@ -80,8 +80,27 @@ const migrateLegacyVolumeOverride = (value: unknown) => {
   };
 };
 
+const migrateLegacyChromaKey = (value: unknown) => {
+  const volumeMigrated = migrateLegacyVolumeOverride(value);
+  if (!volumeMigrated || typeof volumeMigrated !== "object" || Array.isArray(volumeMigrated)) return volumeMigrated;
+  const record = volumeMigrated as Record<string, unknown>;
+  const chromaKey = record.chromaKey;
+  if (!chromaKey || typeof chromaKey !== "object" || Array.isArray(chromaKey)) return volumeMigrated;
+  const settings = chromaKey as Record<string, unknown>;
+  if (Object.hasOwn(settings, "edgeBlur") || !Object.hasOwn(settings, "smoothness")) return volumeMigrated;
+  const legacySmoothness = typeof settings.smoothness === "number" ? settings.smoothness : 0.08;
+  const { smoothness: _smoothness, ...rest } = settings;
+  return {
+    ...record,
+    chromaKey: {
+      ...rest,
+      edgeBlur: Math.min(100, Math.max(0, legacySmoothness * 25)),
+    },
+  };
+};
+
 export const assetSettingsSchema = z.preprocess(
-  migrateLegacyVolumeOverride,
+  migrateLegacyChromaKey,
   z.object({
     assetId: z.string().uuid(),
     type: z.enum(["image", "video"]),
@@ -102,9 +121,9 @@ export const assetSettingsSchema = z.preprocess(
           .regex(/^#[0-9a-fA-F]{6}$/)
           .default("#00ff00"),
         similarity: z.number().min(0).max(1).default(0.15),
-        smoothness: z.number().min(0.001).max(1).default(0.08),
+        edgeBlur: z.number().min(0).max(100).default(2),
       })
-      .default({ enabled: false, color: "#00ff00", similarity: 0.15, smoothness: 0.08 }),
+      .default({ enabled: false, color: "#00ff00", similarity: 0.15, edgeBlur: 2 }),
     startSeconds: z.number().nonnegative().default(0),
     endSeconds: z.number().positive().nullable().default(null),
     volumeOverride: z.number().min(0).nullable().default(null),

@@ -42,8 +42,14 @@ describe("audio setting defaults", () => {
       enabled: false,
       color: "#00ff00",
       similarity: 0.15,
-      smoothness: 0.08,
+      edgeBlur: 2,
     });
+    expect(
+      assetSettingsSchema.parse({
+        ...videoBase,
+        chromaKey: { enabled: true, color: "#00ff00", similarity: 0.2, smoothness: 0.08 },
+      }).chromaKey,
+    ).toEqual({ enabled: true, color: "#00ff00", similarity: 0.2, edgeBlur: 2 });
   });
 
   it("adds project audio defaults to existing documents", () => {

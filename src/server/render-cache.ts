@@ -7,7 +7,7 @@ import { db } from "./db";
 import { appSettings, renderJobs } from "./db/schema";
 
 const RENDER_CACHE_VERSION = "diary-video-h264-crf15-v2";
-const RENDER_IMPLEMENTATION_VERSION = "remotion-media-chroma-key-v6";
+const RENDER_IMPLEMENTATION_VERSION = "remotion-media-ycbcr-chroma-key-v8";
 const CACHE_KEY_PREFIX = "render-cache:";
 
 type RenderCacheEntry = {

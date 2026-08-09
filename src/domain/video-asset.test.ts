@@ -9,7 +9,7 @@ const asset = (overrides: Partial<AssetSettings> = {}): AssetSettings => ({
   displayArea: "full",
   sourceDurationSeconds: 10,
   trim: { top: 0, right: 0, bottom: 0, left: 0 },
-  chromaKey: { enabled: false, color: "#00ff00", similarity: 0.15, smoothness: 0.08 },
+  chromaKey: { enabled: false, color: "#00ff00", similarity: 0.15, edgeBlur: 2 },
   startSeconds: 2,
   endSeconds: 6,
   volumeOverride: null,
