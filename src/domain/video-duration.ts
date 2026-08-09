@@ -1,5 +1,6 @@
 import { EDITOR_CONSTANTS } from "./defaults";
 import { calculateBlock } from "./timeline";
+import { getSupportCreditsGroups } from "./support-credits";
 import type { Character, ContentBlock, ProjectDocument } from "./types";
 
 const secondsToFrames = (seconds: number, fps: number) => {
@@ -26,6 +27,10 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
     seconds += EDITOR_CONSTANTS.dateCenterSeconds + EDITOR_CONSTANTS.diaryUiFadeSeconds;
     seconds += diary.blocks.reduce((sum, block) => sum + calculateBlock(block, characters).duration, 0);
   }
+  seconds += getSupportCreditsGroups(project.supportCredits, characters).reduce(
+    (sum, group) => sum + Math.ceil(group.timing.duration * fps) / fps,
+    0,
+  );
   const minimumFrames = Number.isSafeInteger(fps) && fps > 0 ? fps : EDITOR_CONSTANTS.fps;
   return Math.max(minimumFrames, secondsToFrames(seconds, fps));
 }

@@ -6,6 +6,7 @@ import {
   diaryEntrySchema,
   dialogueSchema,
   projectDocumentSchema,
+  supportCreditsSchema,
 } from "./types";
 
 describe("dialogueSchema", () => {
@@ -55,6 +56,64 @@ describe("audio setting defaults", () => {
   it("adds project audio defaults to existing documents", () => {
     const project = projectDocumentSchema.parse({ name: "既存プロジェクト" });
     expect(project.audio).toEqual({ bgm: null, sceneIntroSe: null, contentSe: null });
+    expect(project.supportCredits).toEqual({
+      narratorCharacterId: null,
+      videos: [],
+      bgm: { mode: "inherit" },
+      sceneIntroSe: { mode: "inherit" },
+      cache: null,
+      narrations: [],
+    });
+  });
+
+  it("migrates the shared support period to each configured and cached video", () => {
+    const credits = supportCreditsSchema.parse({
+      videoIds: ["sm123"],
+      startDate: "2026-08-01",
+      cache: {
+        fetchedAt: "2026-08-09T05:00:00.000Z",
+        startDate: "2026-08-01",
+        videos: [
+          {
+            videoId: "sm123",
+            title: "動画タイトル",
+            thumbnailUrl: "https://example.com/thumb.jpg",
+            advertisers: [],
+            gifts: [],
+          },
+        ],
+      },
+    });
+
+    expect(credits.videos).toEqual([{ videoId: "sm123", startDate: "2026-08-01" }]);
+    expect(credits.cache?.videos[0].startDate).toBe("2026-08-01");
+    expect(credits.bgm).toEqual({ mode: "inherit" });
+    expect(credits.sceneIntroSe).toEqual({ mode: "inherit" });
+  });
+
+  it("migrates generated support endings to the new wording", () => {
+    const credits = supportCreditsSchema.parse({
+      narrations: [
+        {
+          key: "video:sm123:ending",
+          id: "00000000-0000-4000-8000-000000000010",
+          characterId: "00000000-0000-4000-8000-000000000011",
+          text: "ご覧の皆様に支えられております。",
+          kana: "ゴランノミナサマニササエラレテオリマス'。",
+          audio: {
+            status: "ready",
+            url: "/old.wav",
+            durationSeconds: 1,
+            error: null,
+            inputHash: "old",
+          },
+        },
+      ],
+    });
+
+    expect(credits.narrations[0].text).toBe("ご覧の皆様に支えていただきました。");
+    expect(credits.narrations[0].kana).toBeNull();
+    expect(credits.narrations[0].audio.status).toBe("idle");
   });
 
   it("makes diary and content SE settings inherit by default", () => {

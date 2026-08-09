@@ -29,4 +29,30 @@ describe("project credit IDs", () => {
     project.characterIds = [character.id];
     expect(getProjectCreditIds(project, [character], [])).toEqual([...PROJECT_FIXED_CREDIT_IDS, "sm12", "nc34"]);
   });
+
+  it("includes the support scene intro SE override", () => {
+    const project = createProject();
+    const assetId = "00000000-0000-4000-8000-000000000003";
+    project.supportCredits.videos = [{ videoId: "sm123", startDate: null }];
+    project.supportCredits.sceneIntroSe = {
+      mode: "custom",
+      clip: { assetId, url: "/support-se", volumeOverride: null },
+    };
+    project.supportCredits.cache = {
+      fetchedAt: "2026-08-09T05:00:00.000Z",
+      videos: [
+        {
+          videoId: "sm123",
+          startDate: null,
+          title: "動画",
+          thumbnailUrl: "https://example.com/thumb.jpg",
+          ownerName: "投稿者",
+          advertisers: [{ supporterId: 1, supporterName: "広告主", totalPoint: 1 }],
+          gifts: [],
+        },
+      ],
+    };
+
+    expect(getProjectCreditIds(project, [], [{ id: assetId, originalName: "support_nc78.wav" }])).toContain("nc78");
+  });
 });

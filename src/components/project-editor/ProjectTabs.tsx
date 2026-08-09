@@ -65,6 +65,16 @@ export function ProjectTabs({ activeTab, diaries, tabsRef, onSelect, onSortDiari
             </button>
           );
         })}
+        <button
+          id="tab-support"
+          role="tab"
+          aria-selected={activeTab === "support"}
+          aria-controls="panel-support"
+          className={activeTab === "support" ? "active" : ""}
+          onClick={() => onSelect("support")}
+        >
+          <span>広告・ギフト紹介</span>
+        </button>
       </div>
       <div className="editor-tab-actions">
         {diaries.length > 1 ? (

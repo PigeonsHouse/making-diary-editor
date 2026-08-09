@@ -51,5 +51,24 @@ describe("getPreviewProject", () => {
     const preview = getPreviewProject(project, `diary:${selected.id}`);
     expect(preview.wishList).toBeNull();
     expect(preview.diaries).toEqual([selected]);
+    expect(preview.supportCredits.cache).toBeNull();
+  });
+
+  it("keeps only support credits for the support tab", () => {
+    const project = createProject();
+    project.wishList = {
+      markdown: "wish",
+      dialogues: [],
+      durationSeconds: 3,
+      endHoldSeconds: null,
+      sceneIntroSe: { mode: "inherit" },
+      bgm: { mode: "inherit" },
+    };
+    project.diaries = [createDiary()];
+
+    const preview = getPreviewProject(project, "support");
+    expect(preview.wishList).toBeNull();
+    expect(preview.diaries).toEqual([]);
+    expect(preview.supportCredits).toBe(project.supportCredits);
   });
 });

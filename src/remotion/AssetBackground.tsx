@@ -45,7 +45,7 @@ export function AssetBackground({
   );
 }
 
-function GridBackground() {
+export function GridBackground() {
   return (
     <AbsoluteFill
       style={{

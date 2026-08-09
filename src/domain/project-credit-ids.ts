@@ -1,4 +1,5 @@
 import type { Character, ProjectDocument } from "./types";
+import { hasSupport, isSupportCacheCurrent } from "./support-credits";
 
 type AssetLike = { id: string; originalName: string };
 
@@ -38,6 +39,10 @@ export function getUsedAssetIds(project: ProjectDocument, characters: Character[
   if (project.wishList) {
     addResolvedOverride(project.wishList.bgm, project.audio.bgm);
     addResolvedOverride(project.wishList.sceneIntroSe, project.audio.sceneIntroSe);
+  }
+  if (isSupportCacheCurrent(project.supportCredits) && hasSupport(project.supportCredits.cache)) {
+    addResolvedOverride(project.supportCredits.bgm, project.audio.bgm);
+    addResolvedOverride(project.supportCredits.sceneIntroSe, project.audio.sceneIntroSe);
   }
   for (const diary of project.diaries) {
     addResolvedOverride(diary.bgm, project.audio.bgm);

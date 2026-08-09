@@ -33,7 +33,7 @@ import {
 } from "./render-config";
 import { detectGpuCapabilities, getGpuMode, isHardwareEncodingError, resolveGpuUsage } from "./gpu-runtime";
 import { resolveRenderAssetUrls } from "./render-input";
-import { getRemotionServeUrl } from "./remotion-bundler";
+import { getRemotionServeUrl } from "./remotion-bundle";
 import { createProgressReporter } from "./render-progress";
 import { calculateDetailedRenderProgress } from "./render-progress-value";
 import { createRenderDiagnostics } from "./render-diagnostics";

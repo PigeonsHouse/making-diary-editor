@@ -14,7 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "worker": "tsx src/worker/index.ts",
-    "worker:bundle": "tsx src/worker/build-remotion-bundle.ts"
+    "worker:bundle": "tsx src/worker/remotion-bundle/build.ts"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-jp": "5.2.10",

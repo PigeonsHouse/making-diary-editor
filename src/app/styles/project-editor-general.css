@@ -503,7 +503,6 @@
   font-weight: 700;
 }
 .audio-setting-row > label:first-child > span {
-  flex: 0 0 116px;
   white-space: nowrap;
 }
 .audio-setting-row select {

@@ -13,6 +13,7 @@ import { ProjectTabs } from "./project-editor/ProjectTabs";
 import { ProjectCreditIds } from "./project-editor/ProjectCreditIds";
 import { ThumbnailEditor, ThumbnailPreview } from "./project-editor/ThumbnailEditor";
 import { RenderDownloadLink, RenderHistory } from "./project-editor/RenderHistory";
+import { SupportCreditsEditor } from "./project-editor/SupportCreditsEditor";
 import { WishEditor } from "./project-editor/WishEditor";
 import { cleanLegacyVoiceOverrides, fillMissingAssetDurations } from "./project-editor/project-document";
 import { getPreviewProject } from "./project-editor/preview-project";
@@ -23,7 +24,7 @@ import { useRenderJobs } from "./project-editor/useRenderJobs";
 const projectTabStorageKey = (projectId: string) => `making-diary-editor:project-tab:${projectId}`;
 
 const isAvailableEditorTab = (value: string | null, project: ProjectDocument): value is EditorTab => {
-  if (value === "general" || value === "thumbnail" || value === "wish") return true;
+  if (value === "general" || value === "thumbnail" || value === "wish" || value === "support") return true;
   if (!value?.startsWith("diary:")) return false;
   const diaryId = value.slice("diary:".length);
   return project.diaries.some((diary) => diary.id === diaryId);
@@ -295,6 +296,9 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
             <div id="panel-wish" role="tabpanel" aria-labelledby="tab-wish" className="editor-tab-panel">
               <WishEditor project={project} characters={characters} assets={assets} update={update} />
             </div>
+          ) : null}
+          {activeTab === "support" ? (
+            <SupportCreditsEditor project={project} characters={characters} assets={assets} update={update} />
           ) : null}
           {project.diaries.map((diary, diaryIndex) =>
             activeTab === `diary:${diary.id}` ? (

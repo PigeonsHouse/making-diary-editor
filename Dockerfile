@@ -44,14 +44,12 @@ ENV CHROMIUM_PATH=/usr/bin/chromium
 ENV REMOTION_BUNDLE_DIR=/app/.remotion-bundle
 COPY --from=deps /app/node_modules ./node_modules
 
-# Only files used by the Remotion bundle are copied before bundling.
 COPY package.json tsconfig.json ./
 COPY src/domain ./src/domain
 COPY src/remotion ./src/remotion
-COPY src/app/styles/remotion.css ./src/app/styles/remotion.css
-COPY src/worker/build-remotion-bundle.ts src/worker/remotion-bundler.ts ./src/worker/
+COPY src/app/styles ./src/app/styles
+COPY src/worker/remotion-bundle ./src/worker/remotion-bundle
 RUN pnpm worker:bundle
 
-# Worker and server-only changes keep the prebuilt Remotion bundle layer cached.
 COPY src ./src
 CMD ["pnpm", "worker"]

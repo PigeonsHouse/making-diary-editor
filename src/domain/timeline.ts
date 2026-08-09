@@ -1,6 +1,7 @@
 import { EDITOR_CONSTANTS } from "./defaults";
 import type { Character, ContentBlock, Dialogue, ProjectDocument } from "./types";
 import { getVideoPlaybackRateError } from "./video-asset";
+import { validateSupportCredits } from "./support-credits";
 
 export type TimedDialogue = {
   dialogue: Dialogue;
@@ -94,8 +95,17 @@ export function calculateBlock(
 }
 
 export function validateProject(document: ProjectDocument, characters: Character[]): TimelineIssue[] {
-  const issues: TimelineIssue[] = [];
+  const issues: TimelineIssue[] = [...validateSupportCredits(document.supportCredits, characters)];
   const known = new Set(characters.map((character) => character.id));
+  if (
+    document.supportCredits.narratorCharacterId &&
+    !document.characterIds.includes(document.supportCredits.narratorCharacterId)
+  ) {
+    issues.push({
+      path: "supportCredits.narratorCharacterId",
+      message: "広告・ギフト紹介の読み上げ担当をプロジェクトへ追加してください",
+    });
+  }
   for (const id of document.characterIds) {
     if (!known.has(id)) issues.push({ path: id, message: "登場キャラクターが削除されています" });
   }

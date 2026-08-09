@@ -58,6 +58,14 @@ export const createProject = (name = "新しい製作日誌"): ProjectDocument =
   thumbnail: { elements: [] },
   wishList: null,
   diaries: [],
+  supportCredits: {
+    narratorCharacterId: null,
+    videos: [],
+    bgm: { mode: "inherit" },
+    sceneIntroSe: { mode: "inherit" },
+    cache: null,
+    narrations: [],
+  },
 });
 
 export const createCharacter = (): Character => ({

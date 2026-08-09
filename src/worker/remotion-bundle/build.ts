@@ -1,6 +1,6 @@
 import path from "node:path";
 import { ensureBrowser } from "@remotion/renderer";
-import { bundleRemotion } from "./remotion-bundler";
+import { bundleRemotion } from ".";
 
 const output = path.resolve(process.env.REMOTION_BUNDLE_DIR ?? ".remotion-bundle");
 

@@ -1,0 +1,124 @@
+.video-support-scene {
+  color: #17212b;
+}
+.video-support-bookend {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.video-support-bookend-card {
+  width: 1220px;
+  margin: auto;
+  padding: 76px 92px;
+  border: 2px solid #dbe2e9;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 16px 44px #24364c17;
+}
+.video-support-bookend-card h1 {
+  margin: 0;
+  font-size: 76px;
+  line-height: 1.35;
+}
+.video-support-bookend-card p {
+  margin: 32px 0 0;
+  color: #53606d;
+  font-size: 30px;
+  font-weight: 650;
+}
+.video-support-video {
+  padding: 0 68px 33px;
+}
+.video-support-header {
+  height: 286px;
+  margin: 0 -68px;
+  padding: 24px 68px;
+  display: grid;
+  grid-template-columns: 390px minmax(0, 1fr);
+  gap: 30px;
+  color: #fff;
+  background: #07101ed9;
+}
+.video-support-header img {
+  width: 390px;
+  height: 238px;
+  object-fit: cover;
+  border-radius: 15px;
+  background: #e2e7ec;
+}
+.video-support-header-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.video-support-header-copy h2 {
+  margin: 0 0 22px;
+  font-size: 56px;
+  line-height: 1.35;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.video-support-header-meta {
+  display: flex;
+  gap: 28px;
+  color: #b8c3cf;
+  font-size: 27px;
+  font-weight: 650;
+}
+.video-support-columns {
+  height: 697px;
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+}
+.video-support-columns.single {
+  grid-template-columns: 1fr;
+}
+.video-support-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 16px 44px #24364c12;
+}
+.video-support-label {
+  height: 44px;
+  margin: 18px auto 8px;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 25px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.video-support-gift .video-support-label {
+  background: #e28b3c;
+}
+.video-support-ad .video-support-label {
+  background: #438bcf;
+}
+.video-support-list-viewport {
+  height: 627px;
+  flex: none;
+  overflow: hidden;
+}
+.video-support-list {
+  padding: 0 30px;
+}
+.video-support-name {
+  overflow: hidden;
+  color: #263341;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

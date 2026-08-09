@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { configureRemotionWebpack } from "./remotion-bundler";
+import { configureRemotionWebpack } from ".";
 
 describe("configureRemotionWebpack", () => {
   it("keeps existing aliases and resolves the project alias from src", () => {

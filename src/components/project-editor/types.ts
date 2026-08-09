@@ -17,7 +17,7 @@ export type AssetRow = {
   error: string | null;
 };
 
-export type EditorTab = "general" | "thumbnail" | "wish" | `diary:${string}`;
+export type EditorTab = "general" | "thumbnail" | "wish" | "support" | `diary:${string}`;
 export type UpdateProject = (recipe: (draft: ProjectDocument) => void) => void;
 
 export type DialogueDragLocation = {
