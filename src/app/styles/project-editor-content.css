@@ -81,6 +81,11 @@
 .asset-control > label input {
   width: 54px;
 }
+.asset-trim-heading {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
 .asset-control > .chroma-key-toggle input {
   width: auto;
 }

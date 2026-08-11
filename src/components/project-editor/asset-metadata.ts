@@ -16,3 +16,16 @@ export function getAssetDurationSeconds(asset: Pick<AssetRow, "metadata"> | unde
     positiveNumber(metadata.format?.duration)
   );
 }
+
+export function getAssetDimensions(asset: Pick<AssetRow, "metadata"> | undefined) {
+  if (!asset) return null;
+  const metadata = asset.metadata as {
+    streams?: Array<{ width?: unknown; height?: unknown }>;
+  };
+  for (const stream of metadata.streams ?? []) {
+    const width = positiveNumber(stream.width);
+    const height = positiveNumber(stream.height);
+    if (width !== null && height !== null) return { width, height };
+  }
+  return null;
+}

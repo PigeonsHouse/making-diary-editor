@@ -6,6 +6,7 @@ import { AbsoluteFill, Freeze, Img, Loop, OffthreadVideo, Sequence, interpolate,
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { resolveAssetVolume, type AssetVolumeMap } from "@/domain/audio";
 import type { AssetTransparencyMap } from "@/domain/asset-transparency";
+import { calculateCroppedMediaLayout } from "@/domain/media-crop";
 import type { AssetSettings, ContentBlock } from "@/domain/types";
 import { getVideoAssetTiming, getVideoPlaybackRateError } from "@/domain/video-asset";
 import { ChromaKeyFilter } from "./ChromaKeyFilter";
@@ -71,18 +72,51 @@ function AssetFrame({
 }) {
   const crop = asset.trim;
   const chromaKeyFilterId = `chroma-key-${asset.assetId}`;
+  const frameHeight = EDITOR_CONSTANTS.height * (asset.displayArea === "above-dialogue" ? 0.77 : 1);
+  const cropLayout =
+    asset.sourceWidth !== null && asset.sourceHeight !== null
+      ? calculateCroppedMediaLayout({
+          sourceWidth: asset.sourceWidth,
+          sourceHeight: asset.sourceHeight,
+          trim: crop,
+          targetWidth: EDITOR_CONSTANTS.width - EDITOR_CONSTANTS.mediaMarginPx * 2,
+          targetHeight: frameHeight - EDITOR_CONSTANTS.mediaMarginPx * 2,
+        })
+      : null;
   const frameStyle: React.CSSProperties = {
     position: "absolute",
     inset: asset.displayArea === "above-dialogue" ? "0 0 23%" : 0,
     boxSizing: "border-box",
     padding: EDITOR_CONSTANTS.mediaMarginPx,
+    display: "grid",
+    placeItems: "center",
   };
-  const mediaStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    objectFit: "contain",
-    objectPosition: "center",
-    clipPath: `inset(${crop.top}px ${crop.right}px ${crop.bottom}px ${crop.left}px)`,
+  const viewportStyle: React.CSSProperties = cropLayout
+    ? {
+        position: "relative",
+        width: cropLayout.viewportWidth,
+        height: cropLayout.viewportHeight,
+        overflow: "hidden",
+      }
+    : { position: "relative", width: "100%", height: "100%" };
+  const mediaStyle: React.CSSProperties = cropLayout
+    ? {
+        position: "absolute",
+        width: cropLayout.mediaWidth,
+        height: cropLayout.mediaHeight,
+        left: cropLayout.mediaLeft,
+        top: cropLayout.mediaTop,
+        objectFit: "fill",
+      }
+    : {
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+        objectPosition: "center",
+        clipPath: `inset(${crop.top}px ${crop.right}px ${crop.bottom}px ${crop.left}px)`,
+      };
+  const filteredMediaStyle: React.CSSProperties = {
+    ...mediaStyle,
     filter: asset.chromaKey.enabled ? `url(#${chromaKeyFilterId})` : undefined,
   };
 
@@ -90,17 +124,19 @@ function AssetFrame({
     <>
       <ChromaKeyFilter id={chromaKeyFilterId} settings={asset.chromaKey} />
       <div style={frameStyle}>
-        {asset.type === "image" ? (
-          <Img src={asset.url} style={mediaStyle} />
-        ) : (
-          <VideoAsset
-            asset={asset}
-            blockDurationSeconds={blockDurationSeconds}
-            style={mediaStyle}
-            assetVolumes={assetVolumes}
-            transparent={assetTransparency[asset.assetId] === true}
-          />
-        )}
+        <div style={viewportStyle}>
+          {asset.type === "image" ? (
+            <Img src={asset.url} style={filteredMediaStyle} />
+          ) : (
+            <VideoAsset
+              asset={asset}
+              blockDurationSeconds={blockDurationSeconds}
+              style={filteredMediaStyle}
+              assetVolumes={assetVolumes}
+              transparent={assetTransparency[asset.assetId] === true}
+            />
+          )}
+        </div>
       </div>
     </>
   );
@@ -159,7 +195,11 @@ function VideoAsset({
   const video = transparent ? (
     <OffthreadVideo {...mediaProps} transparent style={style} />
   ) : (
-    <Video {...mediaProps} objectFit="contain" style={{ ...style, objectFit: undefined, objectPosition: undefined }} />
+    <Video
+      {...mediaProps}
+      objectFit={style.objectFit === "fill" ? "fill" : "contain"}
+      style={{ ...style, objectFit: undefined, objectPosition: undefined }}
+    />
   );
 
   if (asset.shortageMode === "loop" && timing.clipDurationInFrames !== null) {

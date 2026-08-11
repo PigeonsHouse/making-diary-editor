@@ -1,12 +1,13 @@
 "use client";
 
 import { createDialogue } from "@/domain/defaults";
+import { getMaximumTrim } from "@/domain/media-crop";
 import { calculateBlock } from "@/domain/timeline";
 import type { AudioClip, Character, ContentBlock } from "@/domain/types";
 import { AudioOverrideEditor } from "./AudioSettings";
 import { DialogueEditor } from "./DialogueEditor";
 import { VideoAssetControls } from "./VideoAssetControls";
-import { getAssetDurationSeconds } from "./asset-metadata";
+import { getAssetDimensions, getAssetDurationSeconds } from "./asset-metadata";
 import { BLOCK_DRAG_TYPE, hasBlockDragData, readBlockDragData } from "./block-dnd";
 import { hasDialogueDragData, readDialogueDragData } from "./dialogue-dnd";
 import type { AssetRow } from "./types";
@@ -111,6 +112,7 @@ export function BlockEditor({
           value={block.asset?.assetId ?? ""}
           onChange={(event) => {
             const asset = assets.find((item) => item.id === event.target.value);
+            const dimensions = getAssetDimensions(asset);
             updateBlock((draft) => {
               draft.asset = asset
                 ? {
@@ -118,6 +120,8 @@ export function BlockEditor({
                     type: asset.kind as "image" | "video",
                     url: `/api/files/assets/${asset.id}`,
                     displayArea: "above-dialogue",
+                    sourceWidth: dimensions?.width ?? null,
+                    sourceHeight: dimensions?.height ?? null,
                     sourceDurationSeconds: asset.kind === "video" ? getAssetDurationSeconds(asset) : null,
                     trim: { top: 0, right: 0, bottom: 0, left: 0 },
                     chromaKey: {
@@ -161,18 +165,31 @@ export function BlockEditor({
                 <option value="above-dialogue">字幕の上側</option>
               </select>
             </label>
+            <span className="asset-trim-heading">素材端から切り抜き</span>
             {(["top", "right", "bottom", "left"] as const).map((side) => (
               <label key={side}>
-                {side}
+                {{ top: "上", right: "右", bottom: "下", left: "左" }[side]} (px)
                 <input
                   type="number"
                   min="0"
-                  value={block.asset!.trim[side]}
-                  onChange={(event) =>
-                    updateBlock((draft) => {
-                      draft.asset!.trim[side] = Number(event.target.value);
-                    })
+                  max={
+                    block.asset!.sourceWidth !== null && block.asset!.sourceHeight !== null
+                      ? getMaximumTrim(side, block.asset!.trim, block.asset!.sourceWidth, block.asset!.sourceHeight)
+                      : undefined
                   }
+                  value={block.asset!.trim[side]}
+                  onChange={(event) => {
+                    const requested = Number(event.target.value);
+                    if (!Number.isFinite(requested)) return;
+                    updateBlock((draft) => {
+                      const asset = draft.asset!;
+                      const maximum =
+                        asset.sourceWidth !== null && asset.sourceHeight !== null
+                          ? getMaximumTrim(side, asset.trim, asset.sourceWidth, asset.sourceHeight)
+                          : Number.POSITIVE_INFINITY;
+                      asset.trim[side] = Math.min(maximum, Math.max(0, requested));
+                    });
+                  }}
                 />
               </label>
             ))}

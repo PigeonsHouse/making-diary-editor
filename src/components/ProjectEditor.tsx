@@ -15,7 +15,7 @@ import { ThumbnailEditor, ThumbnailPreview } from "./project-editor/ThumbnailEdi
 import { RenderDownloadLink, RenderHistory } from "./project-editor/RenderHistory";
 import { SupportCreditsEditor } from "./project-editor/SupportCreditsEditor";
 import { WishEditor } from "./project-editor/WishEditor";
-import { cleanLegacyVoiceOverrides, fillMissingAssetDurations } from "./project-editor/project-document";
+import { cleanLegacyVoiceOverrides, fillMissingAssetMetadata } from "./project-editor/project-document";
 import { getPreviewProject } from "./project-editor/preview-project";
 import type { AssetRow, CharacterRow, EditorTab } from "./project-editor/types";
 import { useNavigationGuard } from "./project-editor/useNavigationGuard";
@@ -67,9 +67,9 @@ export function ProjectEditor({ projectId }: { projectId: string }) {
     ])
       .then(([project, characterRows, assetRows]: [ProjectRecord, CharacterRow[], AssetRow[]]) => {
         const cleanedLegacyOverrides = cleanLegacyVoiceOverrides(project.document);
-        const filledAssetDurations = fillMissingAssetDurations(cleanedLegacyOverrides.document, assetRows);
-        const documentChanged = cleanedLegacyOverrides.changed || filledAssetDurations.changed;
-        const nextProject = filledAssetDurations.document;
+        const filledAssetMetadata = fillMissingAssetMetadata(cleanedLegacyOverrides.document, assetRows);
+        const documentChanged = cleanedLegacyOverrides.changed || filledAssetMetadata.changed;
+        const nextProject = filledAssetMetadata.document;
         setRecord({ ...project, document: nextProject });
         setCharacters(characterRows.map((row) => row.data));
         setAssets(assetRows);

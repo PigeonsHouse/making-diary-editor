@@ -38,6 +38,8 @@ export const assetSettingsSchema = z.preprocess(
     type: z.enum(["image", "video"]),
     url: z.string(),
     displayArea: z.enum(["full", "above-dialogue"]).default("full"),
+    sourceWidth: z.number().positive().nullable().default(null),
+    sourceHeight: z.number().positive().nullable().default(null),
     sourceDurationSeconds: z.number().positive().nullable().default(null),
     trim: z.object({
       top: z.number().nonnegative().default(0),

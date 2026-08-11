@@ -1,5 +1,5 @@
 import type { ProjectDocument } from "@/domain/types";
-import { getAssetDurationSeconds } from "./asset-metadata";
+import { getAssetDimensions, getAssetDurationSeconds } from "./asset-metadata";
 import type { AssetRow } from "./types";
 
 export function cleanLegacyVoiceOverrides(document: ProjectDocument) {
@@ -27,17 +27,29 @@ export function cleanLegacyVoiceOverrides(document: ProjectDocument) {
   return { document: cleaned, changed };
 }
 
-export function fillMissingAssetDurations(document: ProjectDocument, assets: AssetRow[]) {
+export function fillMissingAssetMetadata(document: ProjectDocument, assets: AssetRow[]) {
   const filled = structuredClone(document);
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
   let changed = false;
 
   for (const block of filled.diaries.flatMap((diary) => diary.blocks)) {
-    if (block.asset?.type !== "video" || block.asset.sourceDurationSeconds !== null) continue;
-    const duration = getAssetDurationSeconds(assetsById.get(block.asset.assetId));
-    if (duration === null) continue;
-    block.asset.sourceDurationSeconds = duration;
-    changed = true;
+    if (!block.asset) continue;
+    const asset = assetsById.get(block.asset.assetId);
+    if (block.asset.type === "video" && block.asset.sourceDurationSeconds === null) {
+      const duration = getAssetDurationSeconds(asset);
+      if (duration !== null) {
+        block.asset.sourceDurationSeconds = duration;
+        changed = true;
+      }
+    }
+    if (block.asset.sourceWidth === null || block.asset.sourceHeight === null) {
+      const dimensions = getAssetDimensions(asset);
+      if (dimensions !== null) {
+        block.asset.sourceWidth = dimensions.width;
+        block.asset.sourceHeight = dimensions.height;
+        changed = true;
+      }
+    }
   }
 
   return { document: filled, changed };
