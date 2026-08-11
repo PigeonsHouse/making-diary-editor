@@ -803,17 +803,6 @@ export function ThumbnailPreview({
   };
   return (
     <div className="thumbnail-preview-shell">
-      <div className="thumbnail-export-actions">
-        <button
-          type="button"
-          className="render-download compact thumbnail-export-button"
-          onClick={() => void exportPng()}
-          disabled={isExporting}
-        >
-          {isExporting ? "PNG生成中…" : "PNGをダウンロード"}
-        </button>
-        {exportError ? <small role="alert">{exportError}</small> : null}
-      </div>
       <div className="thumbnail-preview-viewport" ref={viewportRef}>
         <div
           className="thumbnail-preview-stage"
@@ -879,6 +868,17 @@ export function ThumbnailPreview({
             );
           })}
         </div>
+      </div>
+      <div className="thumbnail-export-actions">
+        <button
+          type="button"
+          className="render-download compact thumbnail-export-button"
+          onClick={() => void exportPng()}
+          disabled={isExporting}
+        >
+          {isExporting ? "PNG生成中…" : "PNGをダウンロード"}
+        </button>
+        {exportError ? <small role="alert">{exportError}</small> : null}
       </div>
     </div>
   );
