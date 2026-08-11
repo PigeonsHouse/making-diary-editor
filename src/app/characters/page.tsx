@@ -5,15 +5,14 @@ import { createCharacter, EDITOR_CONSTANTS } from "@/domain/defaults";
 import type { Character } from "@/domain/types";
 import { PsdSettings } from "@/components/PsdSettings";
 import { VoiceSettingsSliders } from "@/components/VoiceSettingsSliders";
+import { useVoicevoxSpeakers } from "@/components/useVoicevoxSpeakers";
 
 type Row = { id: string; revision: number; data: Character };
-type VoicevoxSpeaker = { name: string; styles: Array<{ name: string; id: number }> };
-
 export default function CharactersPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [selected, setSelected] = useState(0);
   const [status, setStatus] = useState("");
-  const [speakers, setSpeakers] = useState<VoicevoxSpeaker[]>([]);
+  const { speakers } = useVoicevoxSpeakers();
   const skip = useRef(true);
   useEffect(() => {
     fetch("/api/characters")
@@ -22,11 +21,6 @@ export default function CharactersPage() {
         setRows(data);
         skip.current = true;
       });
-  }, []);
-  useEffect(() => {
-    fetch("/api/voicevox/speakers")
-      .then((response) => (response.ok ? response.json() : []))
-      .then(setSpeakers);
   }, []);
   const row = rows[selected];
   useEffect(() => {

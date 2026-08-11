@@ -180,6 +180,7 @@ export function DialogueEditor({
         onChange={(event) =>
           updateAudioInput((draft) => {
             draft.characterId = event.target.value;
+            delete draft.voiceOverrides.styleName;
           })
         }
       >
