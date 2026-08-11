@@ -89,6 +89,10 @@
 .asset-control > .chroma-key-toggle input {
   width: auto;
 }
+.asset-control > .bgm-playback-toggle input {
+  width: auto;
+  padding: 0;
+}
 .chroma-key-controls {
   flex: 1 1 100%;
   display: flex;

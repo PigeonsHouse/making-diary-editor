@@ -57,4 +57,19 @@ describe("groupContinuousBgm", () => {
       { from: 90, duration: 30 },
     ]);
   });
+
+  it("mutes sections without restarting a continuous BGM", () => {
+    const segments = groupContinuousBgm([
+      { key: "a", from: 0, duration: 30, bgm: resolvedDefault, mutedSections: [{ from: 10, duration: 8 }] },
+      { key: "b", from: 30, duration: 20, bgm: resolvedDefault },
+    ]);
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0]).toMatchObject({ from: 0, duration: 50 });
+    expect(getBgmVolume(segments[0], 9)).toBe(0.8);
+    expect(getBgmVolume(segments[0], 10)).toBe(0);
+    expect(getBgmVolume(segments[0], 17)).toBe(0);
+    expect(getBgmVolume(segments[0], 18)).toBe(0.8);
+    expect(getBgmVolume(segments[0], 35)).toBe(0.8);
+  });
 });

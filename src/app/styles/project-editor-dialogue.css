@@ -64,6 +64,24 @@
   background: #ffe8ec;
   font-size: 10px;
 }
+.bgm-playback-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.dialogue-row .bgm-playback-toggle input {
+  width: auto;
+  margin: 0;
+}
+.dialogue-bgm-toggle {
+  grid-column: 2 / -1;
+  width: fit-content;
+  padding: 4px 2px;
+  border-top: 1px solid #e1e5e9;
+}
 .dialogue-kana-options {
   grid-column: 2 / -1;
   border-top: 1px solid #e1e5e9;

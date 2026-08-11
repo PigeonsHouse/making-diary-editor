@@ -298,6 +298,18 @@ export function DialogueEditor({
           {dialogue.audio.error}
         </div>
       ) : null}
+      <label className="dialogue-bgm-toggle bgm-playback-toggle">
+        <input
+          type="checkbox"
+          checked={dialogue.bgmMuted}
+          onChange={(event) =>
+            updateDialogue((draft) => {
+              draft.bgmMuted = event.target.checked;
+            })
+          }
+        />
+        BGMをミュート
+      </label>
       {character ? (
         <DialogueVoiceOverrides character={character} dialogue={dialogue} updateDialogue={updateAudioInput} />
       ) : null}

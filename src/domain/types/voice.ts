@@ -58,6 +58,7 @@ export const dialogueSchema = z.object({
   text: z.string().min(1),
   kana: z.string().nullable().default(null),
   pauseBeforeSeconds: z.number().nullable().default(null),
+  bgmMuted: z.boolean().default(false),
   voiceOverrides: voiceOverridesSchema.default({}),
   psdOverrides: z.record(z.string(), z.string()).default({}),
   audio: z.object({

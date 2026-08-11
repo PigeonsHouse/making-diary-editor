@@ -16,7 +16,7 @@ export type TimelineIssue = {
   message: string;
 };
 
-type TimelineBlock = Omit<ContentBlock, "entrySe"> & Partial<Pick<ContentBlock, "entrySe">>;
+type TimelineBlock = Omit<ContentBlock, "entrySe" | "bgmMuted"> & Partial<Pick<ContentBlock, "entrySe" | "bgmMuted">>;
 
 export function dialogueAudioStartFrame(blockStartFrame: number, dialogueStartSeconds: number, fps: number) {
   return blockStartFrame + Math.round(dialogueStartSeconds * fps);

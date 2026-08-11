@@ -19,6 +19,7 @@ export function getVideoDuration(project: ProjectDocument, characters: Character
       dialogues: project.wishList.dialogues,
       durationSeconds: project.wishList.durationSeconds,
       endHoldSeconds: project.wishList.endHoldSeconds,
+      bgmMuted: false,
       entrySe: { mode: "none" },
     } satisfies ContentBlock;
     seconds += calculateBlock(block, characters).duration;

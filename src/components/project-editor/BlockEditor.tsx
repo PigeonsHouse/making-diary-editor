@@ -273,6 +273,14 @@ export function BlockEditor({
           noneLabel="SEなし"
           onChange={(value) => updateBlock((draft) => void (draft.entrySe = value))}
         />
+        <label className="bgm-playback-toggle">
+          <input
+            type="checkbox"
+            checked={block.bgmMuted}
+            onChange={(event) => updateBlock((draft) => void (draft.bgmMuted = event.target.checked))}
+          />
+          BGMをミュート
+        </label>
         <button
           className="icon danger remove-block"
           title="このコンテンツを削除"

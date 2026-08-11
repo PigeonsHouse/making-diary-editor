@@ -106,6 +106,7 @@ export const contentBlockSchema = z.object({
   dialogues: z.array(dialogueSchema).default([]),
   durationSeconds: z.number().positive().nullable().default(null),
   endHoldSeconds: z.number().nonnegative().nullable().default(null),
+  bgmMuted: z.boolean().default(false),
   entrySe: soundEffectOverrideSchema.default({ mode: "inherit" }),
 });
 

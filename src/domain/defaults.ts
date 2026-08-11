@@ -20,6 +20,7 @@ export const createDialogue = (characterId: string): Dialogue => ({
   text: "新しいセリフ",
   kana: null,
   pauseBeforeSeconds: null,
+  bgmMuted: false,
   voiceOverrides: {},
   psdOverrides: {},
   audio: {
@@ -38,6 +39,7 @@ export const createBlock = (): ContentBlock => ({
   dialogues: [],
   durationSeconds: 3,
   endHoldSeconds: null,
+  bgmMuted: false,
   entrySe: { mode: "inherit" },
 });
 

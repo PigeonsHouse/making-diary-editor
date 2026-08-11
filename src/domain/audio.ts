@@ -37,6 +37,7 @@ export type AudioScene = {
   from: number;
   duration: number;
   bgm: ResolvedAudioClip | null;
+  mutedSections?: Array<{ from: number; duration: number }>;
 };
 
 export type ContinuousBgmSegment = {
@@ -58,8 +59,10 @@ export function groupContinuousBgm(scenes: AudioScene[]): ContinuousBgmSegment[]
     }
     const isContinuous = current && current.from + current.duration === scene.from;
     const isSameAudio = current?.clip.assetId === scene.bgm.assetId;
+    const sections = createSceneVolumeSections(scene);
     if (current && isContinuous && isSameAudio) {
-      current.volumeSections.push({ from: current.duration, duration: scene.duration, volume: scene.bgm.volume });
+      const offset = current.duration;
+      current.volumeSections.push(...sections.map((section) => ({ ...section, from: offset + section.from })));
       current.duration += scene.duration;
       continue;
     }
@@ -68,12 +71,29 @@ export function groupContinuousBgm(scenes: AudioScene[]): ContinuousBgmSegment[]
       from: scene.from,
       duration: scene.duration,
       clip: scene.bgm,
-      volumeSections: [{ from: 0, duration: scene.duration, volume: scene.bgm.volume }],
+      volumeSections: sections,
     };
     segments.push(current);
   }
 
   return segments;
+}
+
+function createSceneVolumeSections(scene: AudioScene) {
+  const mutedSections = (scene.mutedSections ?? [])
+    .map((section) => ({
+      from: Math.max(0, Math.min(scene.duration, section.from)),
+      end: Math.max(0, Math.min(scene.duration, section.from + section.duration)),
+    }))
+    .filter((section) => section.end > section.from);
+  const boundaries = [
+    ...new Set([0, scene.duration, ...mutedSections.flatMap((section) => [section.from, section.end])]),
+  ].sort((a, b) => a - b);
+  return boundaries.slice(0, -1).map((from, index) => {
+    const end = boundaries[index + 1];
+    const muted = mutedSections.some((section) => from >= section.from && from < section.end);
+    return { from, duration: end - from, volume: muted ? 0 : scene.bgm!.volume };
+  });
 }
 
 export function getBgmVolume(segment: ContinuousBgmSegment, frame: number) {

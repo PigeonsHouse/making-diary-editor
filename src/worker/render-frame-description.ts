@@ -19,6 +19,7 @@ export function createFrameDescription(project: ProjectDocument, characters: Cha
       dialogues: project.wishList.dialogues,
       durationSeconds: project.wishList.durationSeconds,
       endHoldSeconds: project.wishList.endHoldSeconds,
+      bgmMuted: false,
       entrySe: { mode: "none" },
     } satisfies ContentBlock;
     const frames = secondsToFrames(calculateBlock(block, characters).duration, fps);

@@ -4,6 +4,7 @@ import "@fontsource-variable/noto-sans-jp";
 import { useMemo } from "react";
 import { AbsoluteFill, Audio, Sequence, useVideoConfig } from "remotion";
 import { getBgmVolume, groupContinuousBgm, resolveAudioOverride, type AudioScene } from "@/domain/audio";
+import { createBgmMutedSections } from "@/domain/bgm-mute";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { getSupportCreditsGroups } from "@/domain/support-credits";
 import { calculateBlock } from "@/domain/timeline";
@@ -38,6 +39,7 @@ export function DiaryVideo({
         dialogues: project.wishList.dialogues,
         durationSeconds: project.wishList.durationSeconds,
         endHoldSeconds: project.wishList.endHoldSeconds,
+        bgmMuted: false,
         entrySe: { mode: "none" },
       };
       const timing = calculateBlock(block, characters, defaultEndHold);
@@ -52,6 +54,7 @@ export function DiaryVideo({
         from: cursor,
         duration,
         bgm: resolveAudioOverride(project.audio.bgm, project.wishList.bgm, assetVolumes),
+        mutedSections: getBlockBgmMutedSections(block, timing, 0, fps),
       });
       cursor += duration;
     }
@@ -63,6 +66,13 @@ export function DiaryVideo({
         0,
       );
       const duration = secondsToFrames(introSeconds + blockSeconds, fps);
+      let blockCursor = secondsToFrames(introSeconds, fps);
+      const mutedSections = diary.blocks.flatMap((block) => {
+        const timing = calculateBlock(block, characters, defaultEndHold);
+        const sections = getBlockBgmMutedSections(block, timing, blockCursor, fps);
+        blockCursor += secondsToFrames(timing.duration, fps);
+        return sections;
+      });
       nextSequences.push(
         <Sequence key={diary.id} from={cursor} durationInFrames={duration}>
           <DiaryScene
@@ -81,6 +91,7 @@ export function DiaryVideo({
         from: cursor,
         duration,
         bgm: resolveAudioOverride(project.audio.bgm, diary.bgm, assetVolumes),
+        mutedSections,
       });
       cursor += duration;
     });
@@ -139,5 +150,23 @@ export function DiaryVideo({
       {sceneIntroSoundEffects}
       {sequences}
     </AbsoluteFill>
+  );
+}
+
+function getBlockBgmMutedSections(
+  block: ContentBlock,
+  timing: ReturnType<typeof calculateBlock>,
+  blockFrom: number,
+  fps: number,
+) {
+  const blockDuration = secondsToFrames(timing.duration, fps);
+  return createBgmMutedSections(
+    blockFrom,
+    blockDuration,
+    block.bgmMuted,
+    timing.dialogues.map((item) => ({
+      from: blockFrom + Math.round(item.start * fps),
+      muted: item.dialogue.bgmMuted,
+    })),
   );
 }

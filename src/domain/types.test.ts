@@ -21,6 +21,7 @@ describe("dialogueSchema", () => {
     });
 
     expect(dialogue.voiceOverrides).toEqual({});
+    expect(dialogue.bgmMuted).toBe(false);
   });
 });
 
@@ -126,6 +127,7 @@ describe("audio setting defaults", () => {
     expect(diary.sceneIntroSe).toEqual({ mode: "inherit" });
     expect(diary.bgm).toEqual({ mode: "inherit" });
     expect(diary.blocks[0].entrySe).toEqual({ mode: "inherit" });
+    expect(diary.blocks[0].bgmMuted).toBe(false);
   });
 
   it("migrates the old date SE field to the scene intro SE field", () => {
