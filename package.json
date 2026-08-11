@@ -10,6 +10,8 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
     "containers:up": "node scripts/compose-up.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
