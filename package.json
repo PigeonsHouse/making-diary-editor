@@ -27,6 +27,7 @@
     "ag-psd": "^31.0.2",
     "bullmq": "6.0.0",
     "drizzle-orm": "0.45.2",
+    "html-to-image": "^1.11.13",
     "ioredis": "^5.8.2",
     "next": "16.2.12",
     "pngjs": "^7.0.0",

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { toBlob } from "html-to-image";
 import { createId } from "@/domain/id";
 import { getThumbnailAnchorTransform } from "@/domain/thumbnail";
 import type { Character, ProjectDocument, Thumbnail, ThumbnailEffect, ThumbnailElement } from "@/domain/types";
-import { getAssetDurationSeconds } from "./asset-metadata";
+import { getAssetDimensions, getAssetDurationSeconds } from "./asset-metadata";
 import type { AssetRow, UpdateProject } from "./types";
 
 type Props = { project: ProjectDocument; characters: Character[]; assets: AssetRow[]; update: UpdateProject };
@@ -732,93 +733,180 @@ export function ThumbnailPreview({
   thumbnail,
   characters,
   assets,
+  downloadName,
 }: {
   thumbnail: Thumbnail;
   characters: Character[];
   assets: AssetRow[];
+  downloadName?: string;
 }) {
   const avatarUrls = useThumbnailAvatarUrls(thumbnail, characters);
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+  const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const renderScale = isExporting ? 1 : previewScale;
   useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const updateScale = () => setPreviewScale(stage.clientWidth / 1920);
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const updateScale = () => setPreviewScale(viewport.clientWidth / 1920);
     updateScale();
     const observer = new ResizeObserver(updateScale);
-    observer.observe(stage);
+    observer.observe(viewport);
     return () => observer.disconnect();
   }, []);
+  const exportPng = async () => {
+    const stage = stageRef.current;
+    if (!stage || isExporting) return;
+    setIsExporting(true);
+    setExportError("");
+    const restoreVideoFrames: Array<() => void> = [];
+    try {
+      await nextPaint();
+      for (const video of stage.querySelectorAll("video")) {
+        if (!video.videoWidth || !video.videoHeight)
+          throw new Error("動画のフレームを読み込み中です。少し待って再度お試しください");
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d")?.drawImage(video, 0, 0);
+        const image = document.createElement("img");
+        image.className = video.className;
+        image.style.cssText = video.style.cssText;
+        image.alt = "";
+        image.src = canvas.toDataURL("image/png");
+        video.replaceWith(image);
+        restoreVideoFrames.push(() => image.replaceWith(video));
+      }
+      const blob = await toBlob(stage, {
+        width: 1920,
+        height: 1080,
+        pixelRatio: 1,
+        cacheBust: true,
+        style: { transform: "none" },
+      });
+      if (!blob) throw new Error("PNG画像を生成できませんでした");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = downloadName ?? `making-diary-thumbnail-${crypto.randomUUID()}.png`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "画像の書き出しに失敗しました");
+    } finally {
+      restoreVideoFrames.reverse().forEach((restore) => restore());
+      setIsExporting(false);
+    }
+  };
   return (
     <div className="thumbnail-preview-shell">
-      <div className="thumbnail-preview-stage" ref={stageRef}>
-        {thumbnail.elements.map((element) => {
-          const style = {
-            left: `${element.x / 19.2}%`,
-            top: `${element.y / 10.8}%`,
-            ...getThumbnailAnchorTransform(element.anchor),
-            transform: `rotate(${element.rotation}deg) scale(${element.scale})`,
-          };
-          let content: ReactNode = null;
-          if (element.type === "character") {
-            content = avatarUrls[element.id] ? (
-              <img className="thumbnail-character" src={avatarUrls[element.id]} alt="" />
-            ) : null;
-          } else if (element.type === "asset") {
-            const asset = assetsById.get(element.assetId);
-            if (!asset) return null;
-            content =
-              asset.kind === "video" ? (
-                <ThumbnailVideoFrame src={`/api/files/assets/${asset.id}`} timeSeconds={element.timeSeconds} />
-              ) : (
-                <img className="thumbnail-media" src={`/api/files/assets/${asset.id}`} alt="" />
+      <div className="thumbnail-export-actions">
+        <button
+          type="button"
+          className="render-download compact thumbnail-export-button"
+          onClick={() => void exportPng()}
+          disabled={isExporting}
+        >
+          {isExporting ? "PNG生成中…" : "PNGをダウンロード"}
+        </button>
+        {exportError ? <small role="alert">{exportError}</small> : null}
+      </div>
+      <div className="thumbnail-preview-viewport" ref={viewportRef}>
+        <div
+          className="thumbnail-preview-stage"
+          ref={stageRef}
+          style={isExporting ? { width: "1920px", height: "1080px", transform: `scale(${previewScale})` } : undefined}
+        >
+          {thumbnail.elements.map((element) => {
+            const style = {
+              left: `${element.x * renderScale}px`,
+              top: `${element.y * renderScale}px`,
+              ...getThumbnailAnchorTransform(element.anchor),
+              transform: `rotate(${element.rotation}deg) scale(${element.scale})`,
+            };
+            let content: ReactNode = null;
+            if (element.type === "character") {
+              content = avatarUrls[element.id] ? (
+                <img
+                  className="thumbnail-character"
+                  src={avatarUrls[element.id]}
+                  alt=""
+                  style={{ height: `${885.6 * renderScale}px` }}
+                />
+              ) : null;
+            } else if (element.type === "asset") {
+              const asset = assetsById.get(element.assetId);
+              if (!asset) return null;
+              const dimensions = getAssetDimensions(asset);
+              content =
+                asset.kind === "video" ? (
+                  <ThumbnailVideoFrame
+                    src={`/api/files/assets/${asset.id}`}
+                    timeSeconds={element.timeSeconds}
+                    renderScale={renderScale}
+                    sourceDimensions={dimensions}
+                  />
+                ) : (
+                  <ThumbnailAssetImage
+                    src={`/api/files/assets/${asset.id}`}
+                    renderScale={renderScale}
+                    sourceDimensions={dimensions}
+                  />
+                );
+            } else {
+              content = (
+                <div
+                  className="thumbnail-text"
+                  style={{
+                    fontSize: `${element.fontSize * renderScale}px`,
+                    color: element.color,
+                    textAlign: element.textAlign,
+                  }}
+                >
+                  <span>{element.text}</span>
+                </div>
               );
-          } else {
-            content = (
-              <div
-                className="thumbnail-text"
-                style={{
-                  fontSize: `${element.fontSize / 19.2}cqw`,
-                  color: element.color,
-                  textAlign: element.textAlign,
-                }}
-              >
-                <span>{element.text}</span>
+            }
+            return (
+              <div className="thumbnail-preview-element" key={element.id} style={style}>
+                <ThumbnailEffectStack effects={element.effects} renderScale={renderScale} filterPrefix={element.id}>
+                  {content}
+                </ThumbnailEffectStack>
               </div>
             );
-          }
-          return (
-            <div className="thumbnail-preview-element" key={element.id} style={style}>
-              <ThumbnailEffectStack effects={element.effects} previewScale={previewScale} filterPrefix={element.id}>
-                {content}
-              </ThumbnailEffectStack>
-            </div>
-          );
-        })}
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
+const nextPaint = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
 function ThumbnailEffectStack({
   effects,
   children,
-  previewScale,
+  renderScale,
   filterPrefix,
 }: {
   effects: ThumbnailEffect[];
   children: ReactNode;
-  previewScale: number;
+  renderScale: number;
   filterPrefix: string;
 }) {
   return effects.reduce<ReactNode>((result, effect, index) => {
     let style: CSSProperties = {};
-    if (effect.type === "background") style = { backgroundColor: effect.color, padding: `${effect.padding / 19.2}cqw` };
-    if (effect.type === "border-radius") style = { borderRadius: `${effect.radius / 19.2}cqw`, overflow: "hidden" };
+    if (effect.type === "background")
+      style = { backgroundColor: effect.color, padding: `${effect.padding * renderScale}px` };
+    if (effect.type === "border-radius")
+      style = { borderRadius: `${effect.radius * renderScale}px`, overflow: "hidden" };
     if (effect.type === "shadow")
       style = {
-        filter: `drop-shadow(${effect.x / 19.2}cqw ${effect.y / 19.2}cqw ${effect.blur / 19.2}cqw ${effect.color})`,
+        filter: `drop-shadow(${effect.x * renderScale}px ${effect.y * renderScale}px ${effect.blur * renderScale}px ${effect.color})`,
       };
     if (effect.type === "outline") {
       const filterId = `thumbnail-outline-${filterPrefix}-${effect.id}-${index}`.replace(/[^a-zA-Z0-9_-]/g, "-");
@@ -830,7 +918,7 @@ function ThumbnailEffectStack({
                 <feMorphology
                   in="SourceAlpha"
                   operator="dilate"
-                  radius={effect.width * previewScale * 0.5}
+                  radius={effect.width * renderScale * 0.5}
                   result="expanded"
                 />
                 <feFlood floodColor={effect.color} result="color" />
@@ -856,11 +944,63 @@ function ThumbnailEffectStack({
   }, children);
 }
 
-function ThumbnailVideoFrame({ src, timeSeconds }: { src: string; timeSeconds: number }) {
+type MediaDimensions = { width: number; height: number };
+
+function getThumbnailMediaStyle(dimensions: MediaDimensions | null, renderScale: number): CSSProperties {
+  if (!dimensions) return { maxWidth: `${1344 * renderScale}px`, maxHeight: `${756 * renderScale}px` };
+  const fitScale = Math.min(1, 1344 / dimensions.width, 756 / dimensions.height);
+  return {
+    width: `${dimensions.width * fitScale * renderScale}px`,
+    height: `${dimensions.height * fitScale * renderScale}px`,
+  };
+}
+
+function ThumbnailAssetImage({
+  src,
+  renderScale,
+  sourceDimensions,
+}: {
+  src: string;
+  renderScale: number;
+  sourceDimensions: MediaDimensions | null;
+}) {
+  const [loadedDimensions, setLoadedDimensions] = useState<MediaDimensions | null>(sourceDimensions);
+  useEffect(() => setLoadedDimensions(sourceDimensions), [src, sourceDimensions?.width, sourceDimensions?.height]);
+  return (
+    <img
+      className="thumbnail-media"
+      src={src}
+      alt=""
+      style={getThumbnailMediaStyle(loadedDimensions, renderScale)}
+      onLoad={(event) => {
+        if (!loadedDimensions) {
+          setLoadedDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight });
+        }
+      }}
+    />
+  );
+}
+
+function ThumbnailVideoFrame({
+  src,
+  timeSeconds,
+  renderScale,
+  sourceDimensions,
+}: {
+  src: string;
+  timeSeconds: number;
+  renderScale: number;
+  sourceDimensions: MediaDimensions | null;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [loadedDimensions, setLoadedDimensions] = useState<MediaDimensions | null>(sourceDimensions);
+  useEffect(() => setLoadedDimensions(sourceDimensions), [src, sourceDimensions?.width, sourceDimensions?.height]);
   const seek = () => {
     const video = videoRef.current;
     if (!video) return;
+    if (!loadedDimensions && video.videoWidth && video.videoHeight) {
+      setLoadedDimensions({ width: video.videoWidth, height: video.videoHeight });
+    }
     const maximum = Number.isFinite(video.duration) ? Math.max(0, video.duration - 0.01) : timeSeconds;
     video.currentTime = Math.min(timeSeconds, maximum);
   };
@@ -873,6 +1013,7 @@ function ThumbnailVideoFrame({ src, timeSeconds }: { src: string; timeSeconds: n
       preload="metadata"
       muted
       playsInline
+      style={getThumbnailMediaStyle(loadedDimensions, renderScale)}
       onLoadedMetadata={seek}
     />
   );
