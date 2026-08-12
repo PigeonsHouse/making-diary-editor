@@ -5,7 +5,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=making-diary-pnpm-store,target=/pnpm/store,sharing=locked \
     pnpm install --frozen-lockfile --prefer-offline --store-dir=/pnpm/store
 
