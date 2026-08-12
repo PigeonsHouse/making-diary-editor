@@ -1,0 +1,417 @@
+.settings-page {
+  max-width: 980px;
+}
+
+.settings-page .page-heading {
+  margin-bottom: 28px;
+}
+
+.settings-page .page-heading .muted {
+  margin-bottom: 0;
+}
+
+.alert.settings-success {
+  color: #17633c;
+  background: #e3f7ec;
+}
+
+.settings-card {
+  margin-bottom: 22px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.settings-card-heading {
+  margin-bottom: 22px;
+}
+
+.settings-card-heading h2 {
+  margin-bottom: 5px;
+  font-size: 20px;
+}
+
+.settings-card-heading p {
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.dictionary-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.dictionary-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.dictionary-form label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dictionary-form input,
+.dictionary-form select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.dictionary-form input:focus,
+.dictionary-form select:focus {
+  border-color: var(--primary);
+  outline: 2px solid #4361ee1f;
+}
+
+.dictionary-form small,
+.dictionary-table small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.dictionary-form small.field-error {
+  color: var(--danger);
+}
+
+.dictionary-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.accent-editor,
+.accent-editor-empty {
+  grid-column: 1 / -1;
+}
+
+.accent-editor {
+  min-width: 0;
+  margin: 2px 0 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.accent-editor legend,
+.accent-editor-empty strong {
+  padding: 0 7px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.accent-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.accent-editor-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.accent-editor-heading strong {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.accent-editor-heading span {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.accent-flat-button {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.accent-flat-button span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.accent-flat-button small {
+  font-size: 10px;
+}
+
+.accent-flat-button.selected {
+  border-color: var(--primary);
+  color: #334bbb;
+  background: #edf0ff;
+  box-shadow: 0 0 0 2px #4361ee1c;
+}
+
+.mora-accent-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.mora-accent-canvas {
+  min-width: 100%;
+  padding-top: 8px;
+}
+
+.mora-pitch-graph {
+  display: block;
+  overflow: visible;
+}
+
+.mora-pitch-guide {
+  stroke: #dfe4ea;
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.mora-pitch-line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mora-pitch-point {
+  fill: var(--primary);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.mora-pitch-point.trailing {
+  fill: #fff;
+  stroke: var(--primary);
+}
+
+.mora-pitch-trailing-label {
+  fill: var(--muted);
+  font-size: 9px;
+}
+
+.mora-accent-buttons {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 72px;
+  width: max-content;
+  border-top: 1px solid var(--line);
+}
+
+.mora-accent-buttons button {
+  display: grid;
+  min-height: 74px;
+  padding: 7px 4px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  color: var(--ink);
+  background: #fff;
+  text-align: center;
+}
+
+.mora-accent-buttons button:hover {
+  background: #f4f6ff;
+}
+
+.mora-accent-buttons button:focus-visible,
+.accent-flat-button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.mora-accent-buttons button.selected {
+  color: #334bbb;
+  background: #edf0ff;
+  box-shadow: inset 0 -3px var(--primary);
+}
+
+.mora-accent-buttons small {
+  font-size: 9px;
+}
+
+.mora-accent-buttons strong {
+  font-size: 18px;
+}
+
+.mora-accent-buttons span {
+  min-height: 14px;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.accent-editor-hint {
+  margin: 9px 0 0;
+}
+
+.accent-editor-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 20px;
+  border: 1px dashed #bcc4cd;
+  border-radius: 10px;
+  color: var(--muted);
+  background: #f8fafc;
+}
+
+.accent-editor-empty strong {
+  padding: 0;
+  color: var(--ink);
+}
+
+.accent-editor-empty span {
+  font-size: 12px;
+}
+
+.dictionary-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.dictionary-state {
+  padding: 28px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.dictionary-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.dictionary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dictionary-table th,
+.dictionary-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dictionary-table th {
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.dictionary-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dictionary-table tbody tr.editing td {
+  background: #f4f6ff;
+}
+
+.dictionary-actions-heading {
+  text-align: right !important;
+}
+
+.dictionary-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.dictionary-row-actions button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dictionary-edit-button {
+  border: 1px solid var(--line);
+  color: #4e5661;
+  background: #fff;
+}
+
+.dictionary-edit-button:hover {
+  border-color: #aeb6c0;
+  background: var(--surface);
+}
+
+.dictionary-delete-button {
+  border: 1px solid #efbec6;
+  color: #a52f42;
+  background: #fff3f5;
+}
+
+.dictionary-delete-button:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: #ffe8ec;
+}
+
+.dictionary-delete-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+@media (max-width: 680px) {
+  .settings-card {
+    padding: 18px;
+  }
+
+  .dictionary-form {
+    grid-template-columns: 1fr;
+  }
+
+  .dictionary-list-heading {
+    align-items: flex-start;
+  }
+
+  .dictionary-editor-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accent-editor {
+    padding: 14px;
+  }
+
+  .accent-editor-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accent-flat-button {
+    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+  }
+}

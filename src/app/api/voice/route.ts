@@ -1,9 +1,10 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, apiError } from "@/server/http";
+import { createTtsCacheHash } from "@/server/tts-cache";
 import { fetchVoicevox } from "@/server/voicevox";
 import { getWavDurationSeconds } from "@/server/wav";
 
@@ -21,7 +22,13 @@ const schema = z.object({
 export async function POST(request: Request) {
   try {
     const input = schema.parse(await request.json());
-    const hash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    const host = process.env.VOICEVOX_URL ?? "http://localhost:50021";
+    const dictionaryResponse = await fetchVoicevox(
+      new URL("/user_dict", host),
+      { cache: "no-store" },
+      { operation: "ユーザー辞書取得" },
+    );
+    const hash = createTtsCacheHash(input, await dictionaryResponse.json());
     const dataDir = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
     const audioDir = path.join(dataDir, "audio");
     const target = path.join(audioDir, `${hash}.wav`);
@@ -34,7 +41,6 @@ export async function POST(request: Request) {
       }
     } catch {}
 
-    const host = process.env.VOICEVOX_URL ?? "http://localhost:50021";
     const speakersResponse = await fetchVoicevox(new URL("/speakers", host), undefined, { operation: "話者一覧取得" });
     const speakers = (await speakersResponse.json()) as Array<{
       name: string;
