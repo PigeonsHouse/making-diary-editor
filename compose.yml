@@ -76,6 +76,12 @@ services:
     image: voicevox/voicevox_engine:cpu-0.26.0-dev
     ports:
       - "50021:50021"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - chown -R user:user /home/user/.local/share/voicevox-engine && exec /entrypoint.sh
+    volumes:
+      - voicevox-data:/home/user/.local/share/voicevox-engine
 
   postgres:
     image: postgres:17-alpine
@@ -109,3 +115,4 @@ volumes:
   diary-data:
   postgres-data:
   redis-data:
+  voicevox-data:
