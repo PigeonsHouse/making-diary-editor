@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { requestVoice } from "@/components/voice-api";
 import type { Character, SupportNarration } from "@/domain/types";
 import type { UpdateProject } from "../types";
 
@@ -15,17 +16,24 @@ export function useSupportVoiceGeneration({
   narrator: Character | null;
   update: UpdateProject;
 }) {
-  const [generatingKey, setGeneratingKey] = useState<string | null>(null);
+  const [requestState, setRequestState] = useState<{ key: string; status: "waiting" | "generating" } | null>(null);
   const runningRef = useRef(false);
-  const narration = narrations.find((item) => item.audio.status === "idle" || item.audio.status === "generating");
+  const verifiedRequestsRef = useRef(new Set<string>());
+  const narration = narrations.find((item) => {
+    if (item.audio.status === "idle" || item.audio.status === "generating") return true;
+    if (item.audio.status !== "ready" || !narrator) return false;
+    return !verifiedRequestsRef.current.has(narrationRequestSignature(item, narrator));
+  });
   const signature = narration ? narrationSignature(narration) : null;
+  const requestSignature = narration && narrator ? narrationRequestSignature(narration, narrator) : null;
 
   useEffect(() => {
-    if (runningRef.current || !narration || !signature || !narrator || !cacheCurrent) return;
+    if (runningRef.current || !narration || !signature || !requestSignature || !narrator || !cacheCurrent) return;
     const timer = window.setTimeout(() => {
       if (runningRef.current) return;
       runningRef.current = true;
-      setGeneratingKey(narration.key);
+      verifiedRequestsRef.current.add(requestSignature);
+      setRequestState({ key: narration.key, status: "waiting" });
       const input = {
         ...narrator.voice,
         ...narration.voiceOverrides,
@@ -33,14 +41,18 @@ export function useSupportVoiceGeneration({
         text: narration.text,
         kana: narration.kana,
       };
-      void fetch("/api/voice", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(input),
+      void requestVoice(input, {
+        onStart: () => setRequestState({ key: narration.key, status: "generating" }),
       })
-        .then(async (response) => {
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.error ?? "音声生成に失敗しました");
+        .then((result) => {
+          if (
+            narration.audio.status === "ready" &&
+            narration.audio.inputHash === result.hash &&
+            narration.audio.url === result.url &&
+            narration.audio.durationSeconds === result.durationSeconds
+          ) {
+            return;
+          }
           update((draft) => {
             const current = draft.supportCredits.narrations.find((item) => item.key === narration.key);
             if (!current || signature !== narrationSignature(current)) return;
@@ -68,13 +80,13 @@ export function useSupportVoiceGeneration({
         )
         .finally(() => {
           runningRef.current = false;
-          setGeneratingKey(null);
+          setRequestState(null);
         });
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [cacheCurrent, generatingKey, narration, narrator, signature, update]);
+  }, [cacheCurrent, narration, narrator, requestSignature, signature, update]);
 
-  return generatingKey;
+  return requestState ?? (narration ? { key: narration.key, status: "waiting" as const } : null);
 }
 
 const narrationSignature = (narration: SupportNarration) =>
@@ -83,4 +95,11 @@ const narrationSignature = (narration: SupportNarration) =>
     kana: narration.kana,
     characterId: narration.characterId,
     voiceOverrides: narration.voiceOverrides,
+  });
+
+const narrationRequestSignature = (narration: SupportNarration, narrator: Character) =>
+  JSON.stringify({
+    narration: narrationSignature(narration),
+    voicevoxName: narrator.voicevoxName,
+    voice: narrator.voice,
   });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { newVoicevoxUserDictWordSchema, voicevoxUserDictSchema } from "../../../../../domain/voicevox-user-dict";
 import { ApiError, apiError } from "../../../../../server/http";
 import { fetchVoicevox } from "../../../../../server/voicevox";
+import { invalidateVoicevoxUserDictionaryCache } from "../../../../../server/voicevox-user-dictionary-cache";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,7 @@ export async function PUT(request: Request, context: Context) {
         invalidInputMessage: "辞書を更新する単語の内容が不正です",
       },
     );
+    invalidateVoicevoxUserDictionaryCache();
     return new Response(null, { status: 204 });
   } catch (error) {
     return apiError(error);
@@ -51,6 +53,7 @@ export async function DELETE(_: Request, context: Context) {
       { method: "DELETE" },
       { operation: "ユーザー辞書削除" },
     );
+    invalidateVoicevoxUserDictionaryCache();
     return new Response(null, { status: 204 });
   } catch (error) {
     return apiError(error);

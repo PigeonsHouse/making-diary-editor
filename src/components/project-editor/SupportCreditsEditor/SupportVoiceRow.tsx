@@ -10,14 +10,14 @@ export function SupportVoiceRow({
   character,
   label,
   index,
-  generating,
+  generationState,
   updateDialogue,
 }: {
   narration: SupportNarration;
   character: Character;
   label: string;
   index: number;
-  generating: boolean;
+  generationState: "waiting" | "generating" | null;
   updateDialogue: (recipe: (dialogue: SupportNarration) => void) => void;
 }) {
   const [kanaState, setKanaState] = useState("");
@@ -48,20 +48,24 @@ export function SupportVoiceRow({
       setKanaState(error instanceof Error ? error.message : "kanaを取得できませんでした");
     }
   };
-  const status = generating
-    ? "生成中"
-    : narration.audio.status === "ready"
-      ? "生成済み"
-      : narration.audio.status === "error"
-        ? "失敗"
-        : "待機中";
+  const status =
+    generationState === "generating"
+      ? "生成中"
+      : generationState === "waiting"
+        ? "待機中"
+        : narration.audio.status === "ready"
+          ? "生成済み"
+          : narration.audio.status === "error"
+            ? "失敗"
+            : "待機中";
+  const displayedAudioStatus = generationState ?? narration.audio.status;
   return (
     <details className="support-voice-row">
       <summary>
         <span className="support-voice-index">{index + 1}</span>
         <small>{label}</small>
         <strong>{narration.text}</strong>
-        <span className={`support-voice-status ${narration.audio.status}`}>{status}</span>
+        <span className={`support-voice-status ${displayedAudioStatus}`}>{status}</span>
       </summary>
       <div className="support-voice-body">
         <div className="support-voice-actions">

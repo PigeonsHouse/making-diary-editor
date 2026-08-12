@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Character, Dialogue } from "@/domain/types";
+import { requestVoice } from "@/components/voice-api";
 import { DialoguePsdOverrides } from "./DialoguePsdOverrides";
 import { DialogueVoiceOverrides } from "./DialogueVoiceOverrides";
 import { DIALOGUE_DRAG_TYPE, hasDialogueDragData, readDialogueDragData } from "./dialogue-dnd";
@@ -29,6 +30,7 @@ export function DialogueEditor({
   const character = characters.find((item) => item.id === dialogue.characterId) ?? characters[0];
   const [kanaOpen, setKanaOpen] = useState(dialogue.kana !== null);
   const [kanaState, setKanaState] = useState("");
+  const [voiceRequestState, setVoiceRequestState] = useState<"waiting" | "generating" | null>(null);
   const initialSignature = useRef("__generate__");
   const updateDialogueRef = useRef(updateDialogue);
   updateDialogueRef.current = updateDialogue;
@@ -46,7 +48,10 @@ export function DialogueEditor({
   };
 
   useEffect(() => {
-    if (!character) return;
+    if (!character) {
+      setVoiceRequestState(null);
+      return;
+    }
     const voice = { ...character.voice, ...dialogue.voiceOverrides };
     const input = {
       ...voice,
@@ -55,17 +60,19 @@ export function DialogueEditor({
       kana: dialogue.kana,
     };
     const signature = JSON.stringify(input);
-    if (signature === initialSignature.current && dialogue.audio.status === "ready") return;
+    if (signature === initialSignature.current && dialogue.audio.status === "ready") {
+      setVoiceRequestState(null);
+      return;
+    }
     let cancelled = false;
+    setVoiceRequestState("waiting");
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch("/api/voice", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(input),
+        const result = await requestVoice(input, {
+          onStart: () => {
+            if (!cancelled) setVoiceRequestState("generating");
+          },
         });
-        if (!response.ok) throw new Error((await response.json()).error);
-        const result = (await response.json()) as { hash: string; url: string; durationSeconds: number };
         if (cancelled) return;
         initialSignature.current = signature;
         if (!Number.isFinite(result.durationSeconds) || result.durationSeconds <= 0) {
@@ -98,6 +105,8 @@ export function DialogueEditor({
             inputHash: null,
           };
         });
+      } finally {
+        if (!cancelled) setVoiceRequestState(null);
       }
     }, 900);
     return () => {
@@ -120,6 +129,8 @@ export function DialogueEditor({
     character?.voice.intonation,
     character?.voice.volume,
   ]);
+
+  const displayedAudioStatus = voiceRequestState ?? dialogue.audio.status;
 
   const loadDefaultKana = async () => {
     if (!character) return;
@@ -212,12 +223,14 @@ export function DialogueEditor({
           })
         }
       />
-      <div className={`audio-status ${dialogue.audio.status}`} title={dialogue.audio.error ?? undefined}>
-        {dialogue.audio.status === "ready" && dialogue.audio.url ? (
+      <div className={`audio-status ${displayedAudioStatus}`} title={dialogue.audio.error ?? undefined}>
+        {displayedAudioStatus === "ready" && dialogue.audio.url ? (
           <button onClick={() => new window.Audio(dialogue.audio.url!).play()}>▶</button>
-        ) : dialogue.audio.status === "generating" ? (
+        ) : displayedAudioStatus === "waiting" ? (
+          "待機中"
+        ) : displayedAudioStatus === "generating" ? (
           "生成中"
-        ) : dialogue.audio.status === "error" ? (
+        ) : displayedAudioStatus === "error" ? (
           "!"
         ) : (
           "○"

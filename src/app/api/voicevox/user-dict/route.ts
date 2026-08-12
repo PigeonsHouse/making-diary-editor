@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { newVoicevoxUserDictWordSchema, voicevoxUserDictSchema } from "../../../../domain/voicevox-user-dict";
 import { apiError } from "../../../../server/http";
 import { fetchVoicevox } from "../../../../server/voicevox";
+import { invalidateVoicevoxUserDictionaryCache } from "../../../../server/voicevox-user-dictionary-cache";
 
 function voicevoxHost() {
   return process.env.VOICEVOX_URL ?? "http://localhost:50021";
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
       },
     );
     const id = await response.json();
+    invalidateVoicevoxUserDictionaryCache();
     return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
     return apiError(error);

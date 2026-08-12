@@ -44,7 +44,7 @@ describe("VOICEVOX user dictionary word route", () => {
       word_type: "VERB",
       priority: "8",
     });
-    expect(calledInit).toEqual({ method: "PUT" });
+    expect(calledInit).toEqual(expect.objectContaining({ method: "PUT", signal: expect.any(AbortSignal) }));
   });
 
   it("returns 404 before updating a missing word", async () => {
@@ -71,6 +71,6 @@ describe("VOICEVOX user dictionary word route", () => {
     expect(response.status).toBe(204);
     const [calledUrl, calledInit] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(calledUrl.pathname).toBe("/user_dict_word/word-id");
-    expect(calledInit).toEqual({ method: "DELETE" });
+    expect(calledInit).toEqual(expect.objectContaining({ method: "DELETE", signal: expect.any(AbortSignal) }));
   });
 });

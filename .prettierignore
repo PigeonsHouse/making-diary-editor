@@ -6,4 +6,5 @@ backup
 public
 pnpm-lock.yaml
 *.md
+drizzle
 *.sql

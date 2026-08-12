@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, apiError } from "./http";
 import { fetchVoicevox } from "./voicevox";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe("fetchVoicevox", () => {
   it("maps an upstream input error to app 400 with a useful message", async () => {
@@ -52,5 +56,26 @@ describe("fetchVoicevox", () => {
     }).catch((caught) => caught);
 
     expect(error).toMatchObject({ status: 502, message: "VOICEVOXに接続できません" });
+  });
+
+  it("times out an unresponsive VOICEVOX request", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("VOICEVOX_TIMEOUT_MS", "50");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          }),
+      ),
+    );
+
+    const request = fetchVoicevox(new URL("http://voicevox/synthesis"), undefined, { operation: "音声合成" }).catch(
+      (caught) => caught,
+    );
+    await vi.advanceTimersByTimeAsync(50);
+
+    await expect(request).resolves.toMatchObject({ status: 504, message: "VOICEVOXの音声合成がタイムアウトしました" });
   });
 });

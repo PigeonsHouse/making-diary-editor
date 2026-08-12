@@ -22,7 +22,10 @@ describe("VOICEVOX user dictionary route", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(words);
-    expect(fetch).toHaveBeenCalledWith(new URL("http://localhost:50021/user_dict"), { cache: "no-store" });
+    expect(fetch).toHaveBeenCalledWith(
+      new URL("http://localhost:50021/user_dict"),
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("registers a word without overriding VOICEVOX priority", async () => {
@@ -52,7 +55,7 @@ describe("VOICEVOX user dictionary route", () => {
       word_type: "PROPER_NOUN",
     });
     expect(calledUrl.searchParams.has("priority")).toBe(false);
-    expect(calledInit).toEqual({ method: "POST" });
+    expect(calledInit).toEqual(expect.objectContaining({ method: "POST", signal: expect.any(AbortSignal) }));
   });
 
   it("rejects an unknown word type before calling VOICEVOX", async () => {

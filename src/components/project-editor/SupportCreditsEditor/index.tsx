@@ -25,7 +25,7 @@ export function SupportCreditsEditor({ project, characters, assets, update }: Pr
   const specByKey = useMemo(() => new Map(specs.map((spec) => [spec.key, spec])), [specs]);
   const readyCount = credits.narrations.filter((item) => item.audio.status === "ready").length;
   const errorCount = credits.narrations.filter((item) => item.audio.status === "error").length;
-  const generatingKey = useSupportVoiceGeneration({
+  const voiceRequestState = useSupportVoiceGeneration({
     cacheCurrent,
     narrations: credits.narrations,
     narrator,
@@ -171,7 +171,7 @@ export function SupportCreditsEditor({ project, characters, assets, update }: Pr
               character={narrator}
               label={specByKey.get(narration.key)?.videoId ?? (narration.key.startsWith("intro") ? "冒頭" : "締め")}
               index={index}
-              generating={generatingKey === narration.key}
+              generationState={voiceRequestState?.key === narration.key ? voiceRequestState.status : null}
               updateDialogue={(recipe) => mutateNarration(narration.key, recipe)}
             />
           ))}
