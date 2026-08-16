@@ -791,7 +791,7 @@ export function ThumbnailPreview({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = downloadName ?? `making-diary-thumbnail-${crypto.randomUUID()}.png`;
+      link.download = downloadName ?? `making-diary-thumbnail-${createId()}.png`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
     } catch (error) {
