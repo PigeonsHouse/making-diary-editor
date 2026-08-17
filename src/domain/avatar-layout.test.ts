@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { calculateAvatarPositions, isAvatarFlipped } from "./avatar-layout";
+import { calculateAvatarBounceOffset, calculateAvatarPositions, isAvatarFlipped } from "./avatar-layout";
+
+describe("calculateAvatarBounceOffset", () => {
+  it("jumps once and scales the height with the rendered avatar", () => {
+    expect(calculateAvatarBounceOffset(undefined, 10, 20, 1.25)).toBe(0);
+    expect(calculateAvatarBounceOffset(0, 10, 20, 1.25)).toBeCloseTo(0);
+    expect(calculateAvatarBounceOffset(5, 10, 20, 1.25)).toBeCloseTo(-25);
+    expect(calculateAvatarBounceOffset(10, 10, 20, 1.25)).toBeCloseTo(0);
+    expect(calculateAvatarBounceOffset(11, 10, 20, 1.25)).toBe(0);
+  });
+});
 
 describe("calculateAvatarPositions", () => {
   it("uses per-diary values for each character and stacks independently on each side", () => {

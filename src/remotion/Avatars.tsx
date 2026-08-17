@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Img } from "remotion";
-import { calculateAvatarPositions, isAvatarFlipped } from "@/domain/avatar-layout";
+import { Img, useVideoConfig } from "remotion";
+import { calculateAvatarBounceOffset, calculateAvatarPositions, isAvatarFlipped } from "@/domain/avatar-layout";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { resolveDialogueAvatarUrl } from "@/domain/psd-previews";
 import type { Character, Dialogue, ProjectDocument } from "@/domain/types";
@@ -12,6 +12,7 @@ export function Avatars({
   characters,
   startedDialogues,
   speakingCharacterIds,
+  dialogueElapsedFramesByCharacter,
   dialoguePsdPreviewUrls,
   enlargeWithoutBackground,
 }: {
@@ -19,9 +20,11 @@ export function Avatars({
   characters: Character[];
   startedDialogues: Dialogue[];
   speakingCharacterIds: string[];
+  dialogueElapsedFramesByCharacter: Record<string, number>;
   dialoguePsdPreviewUrls?: Record<string, string>;
   enlargeWithoutBackground: boolean;
 }) {
+  const { fps } = useVideoConfig();
   const hasActiveSpeaker = speakingCharacterIds.length > 0;
   const { selected, positions } = useMemo(() => {
     const charactersById = new Map(characters.map((character) => [character.id, character]));
@@ -49,6 +52,12 @@ export function Avatars({
         const { side, level, top, edgeOffsetXPx, scale } = positions[index];
         const flipped = isAvatarFlipped(index, project.characterAvatarOverrides[character.id]?.flipHorizontal);
         const isInactive = hasActiveSpeaker && !speakingCharacterIds.includes(character.id);
+        const bounceOffset = calculateAvatarBounceOffset(
+          dialogueElapsedFramesByCharacter[character.id],
+          Math.round(EDITOR_CONSTANTS.avatarBounceSeconds * fps),
+          EDITOR_CONSTANTS.avatarBounceHeightPx,
+          scale,
+        );
         const avatarUrl = resolveDialogueAvatarUrl(
           character.avatar.previewUrl,
           character.id,
@@ -62,7 +71,7 @@ export function Avatars({
             src={avatarUrl}
             style={{
               position: "absolute",
-              top,
+              top: top + bounceOffset,
               [side]: edgeOffsetXPx,
               height: `${EDITOR_CONSTANTS.avatarHeightRatio * 100 * scale}%`,
               zIndex: 10 - level,

@@ -9,6 +9,18 @@ export type AvatarPosition = {
 
 export const isAvatarFlipped = (index: number, override?: boolean) => override ?? index % 2 === 1;
 
+export function calculateAvatarBounceOffset(
+  elapsedFrames: number | undefined,
+  durationFrames: number,
+  heightPx: number,
+  scale: number,
+): number {
+  if (elapsedFrames === undefined || elapsedFrames < 0 || elapsedFrames > durationFrames || durationFrames <= 0) {
+    return 0;
+  }
+  return -Math.sin((elapsedFrames / durationFrames) * Math.PI) * heightPx * scale;
+}
+
 export function calculateAvatarPositions(
   characters: Array<{ id: string; edgeOffsetXPx: number; peekYPx: number; scale: number }>,
   overrides: Record<string, { edgeOffsetXPx?: number; peekYPx?: number }>,

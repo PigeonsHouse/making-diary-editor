@@ -12,6 +12,8 @@ export const EDITOR_CONSTANTS = {
   defaultFadeOutSeconds: 0.5,
   avatarHeightRatio: 0.7,
   avatarWithoutBackgroundScale: 1.8,
+  avatarBounceHeightPx: 22,
+  avatarBounceSeconds: 0.2,
   minSubtitleFontPx: 34,
   subtitleFontPx: 58,
 } as const;

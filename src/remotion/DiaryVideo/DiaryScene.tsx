@@ -51,6 +51,14 @@ export function DiaryScene({
     frame >= introFrames && activeEntry
       ? activeEntry.timing.dialogues.filter((item) => blockSeconds >= item.start).map((item) => item.dialogue)
       : [];
+  const dialogueElapsedFramesByCharacter =
+    frame >= introFrames && activeEntry
+      ? Object.fromEntries(
+          activeEntry.timing.dialogues
+            .filter((item) => blockSeconds >= item.start)
+            .map((item) => [item.dialogue.characterId, blockLocalFrame - secondsToFrames(item.start, fps)]),
+        )
+      : {};
   const speakingCharacterIds =
     frame >= introFrames && activeEntry
       ? getVisibleDialogueCharacterIds(activeEntry.timing.dialogues, blockSeconds)
@@ -84,6 +92,7 @@ export function DiaryScene({
         characters={characters}
         startedDialogues={startedDialogues}
         speakingCharacterIds={speakingCharacterIds}
+        dialogueElapsedFramesByCharacter={dialogueElapsedFramesByCharacter}
         dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
         enlargeWithoutBackground={frame >= introFrames && !activeBlock?.asset}
       />
