@@ -1,6 +1,15 @@
 "use client";
 
-import { AbsoluteFill, Audio, Easing, Img, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  Html5Audio,
+  Easing,
+  Img,
+  Sequence,
+  interpolate,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { getSupportCreditsGroups, type SupportCreditsGroup } from "@/domain/support-credits";
 import type { Character, ProjectDocument, SupportCreditsCache } from "@/domain/types";
 import { GridBackground } from "./AssetBackground";
@@ -57,7 +66,7 @@ function SupportGroup({ group, cache, fps }: { group: SupportCreditsGroup; cache
         from={Math.round(item.start * fps)}
         durationInFrames={secondsToFrames(item.audioEnd - item.start, fps)}
       >
-        <Audio src={item.dialogue.audio.url} />
+        <Html5Audio src={item.dialogue.audio.url} />
       </Sequence>
     ) : null,
   );

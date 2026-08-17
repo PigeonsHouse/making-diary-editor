@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { calculateAvatarPositions } from "@/domain/avatar-layout";
 import { createCharacter, EDITOR_CONSTANTS } from "@/domain/defaults";
 import type { Character } from "@/domain/types";
 import { PsdSettings } from "@/components/PsdSettings";
@@ -197,7 +198,7 @@ export default function CharactersPage() {
                 </span>
               </label>
               <label>
-                立ち絵Y既定（覗き量）
+                立ち絵Y既定（字幕上端から画像中心を上へ）
                 <span>
                   <input
                     type="number"
@@ -250,8 +251,14 @@ export default function CharactersPage() {
 
 function AvatarPositionPreview({ character }: { character: Character }) {
   const { edgeOffsetXPx, peekYPx, scale, previewUrl } = character.avatar;
-  const right = `${(edgeOffsetXPx / EDITOR_CONSTANTS.width) * 100}%`;
-  const top = `${((EDITOR_CONSTANTS.height * 0.77 - peekYPx) / EDITOR_CONSTANTS.height) * 100}%`;
+  const [position] = calculateAvatarPositions(
+    [{ id: character.id, edgeOffsetXPx, peekYPx, scale }],
+    {},
+    EDITOR_CONSTANTS.height * 0.77,
+    EDITOR_CONSTANTS.height * EDITOR_CONSTANTS.avatarHeightRatio,
+  );
+  const right = `${(position.edgeOffsetXPx / EDITOR_CONSTANTS.width) * 100}%`;
+  const top = `${(position.top / EDITOR_CONSTANTS.height) * 100}%`;
 
   return (
     <section className="avatar-position-preview">
@@ -264,7 +271,7 @@ function AvatarPositionPreview({ character }: { character: Character }) {
           <img
             src={previewUrl}
             alt={`${character.name}の配置プレビュー`}
-            style={{ right, top, height: `${70 * scale}%` }}
+            style={{ right, top, height: `${EDITOR_CONSTANTS.avatarHeightRatio * 100 * scale}%` }}
           />
         ) : (
           <div className="avatar-position-empty">PSDプレビューを生成すると表示されます</div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Html5Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { resolveSoundEffect } from "@/domain/audio";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
 import { calculateBlock } from "@/domain/timeline";
@@ -57,7 +57,7 @@ export function DiaryScene({
         const clip = resolveSoundEffect(project.audio.contentSe, block.entrySe, assetVolumes);
         return clip ? (
           <Sequence key={`entry-se-${block.id}`} from={from}>
-            <Audio src={clip.url} volume={clip.volume} />
+            <Html5Audio src={clip.url} volume={clip.volume} />
           </Sequence>
         ) : null;
       }),
@@ -80,6 +80,7 @@ export function DiaryScene({
         characters={characters}
         startedDialogues={startedDialogues}
         dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
+        enlargeWithoutBackground={frame >= introFrames && !activeBlock?.asset}
       />
       {frame < centerEnd ? (
         <div className="video-date-center">{formatDate(diary.date)}</div>

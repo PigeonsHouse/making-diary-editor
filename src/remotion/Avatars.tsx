@@ -12,11 +12,13 @@ export function Avatars({
   characters,
   startedDialogues,
   dialoguePsdPreviewUrls,
+  enlargeWithoutBackground,
 }: {
   project: ProjectDocument;
   characters: Character[];
   startedDialogues: Dialogue[];
   dialoguePsdPreviewUrls?: Record<string, string>;
+  enlargeWithoutBackground: boolean;
 }) {
   const { selected, positions } = useMemo(() => {
     const charactersById = new Map(characters.map((character) => [character.id, character]));
@@ -28,17 +30,20 @@ export function Avatars({
           id: character.id,
           edgeOffsetXPx: character.avatar.edgeOffsetXPx,
           peekYPx: character.avatar.peekYPx,
+          scale:
+            character.avatar.scale * (enlargeWithoutBackground ? EDITOR_CONSTANTS.avatarWithoutBackgroundScale : 1),
         })),
         project.characterAvatarOverrides,
         EDITOR_CONSTANTS.height * 0.77,
+        EDITOR_CONSTANTS.height * EDITOR_CONSTANTS.avatarHeightRatio,
       ),
     };
-  }, [characters, project.characterAvatarOverrides, project.characterIds]);
+  }, [characters, enlargeWithoutBackground, project.characterAvatarOverrides, project.characterIds]);
 
   return (
     <>
       {selected.map((character, index) => {
-        const { side, level, top, edgeOffsetXPx } = positions[index];
+        const { side, level, top, edgeOffsetXPx, scale } = positions[index];
         const flipped = isAvatarFlipped(index, project.characterAvatarOverrides[character.id]?.flipHorizontal);
         const avatarUrl = resolveDialogueAvatarUrl(
           character.avatar.previewUrl,
@@ -55,7 +60,7 @@ export function Avatars({
               position: "absolute",
               top,
               [side]: edgeOffsetXPx,
-              height: `${70 * character.avatar.scale}%`,
+              height: `${EDITOR_CONSTANTS.avatarHeightRatio * 100 * scale}%`,
               zIndex: 10 - level,
               transform: flipped ? "scaleX(-1)" : undefined,
             }}

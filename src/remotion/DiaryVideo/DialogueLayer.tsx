@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Audio, Sequence, useVideoConfig } from "remotion";
+import { Html5Audio, Sequence, useVideoConfig } from "remotion";
 import { layoutSubtitleText } from "@/domain/subtitle-layout";
 import { calculateBlock, dialogueAudioStartFrame } from "@/domain/timeline";
 import type { Character, ContentBlock } from "@/domain/types";
@@ -38,7 +38,7 @@ export function DialogueLayer({
             from={dialogueAudioStartFrame(blockStartFrame, item.start, fps)}
             durationInFrames={secondsToFrames(item.audioEnd - item.start, fps)}
           >
-            <Audio src={item.dialogue.audio.url} />
+            <Html5Audio src={item.dialogue.audio.url} />
           </Sequence>
         ) : null,
       )}

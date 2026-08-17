@@ -10,6 +10,8 @@ export const EDITOR_CONSTANTS = {
   defaultBlockEndHoldSeconds: 0.5,
   mediaMarginPx: 32,
   defaultFadeOutSeconds: 0.5,
+  avatarHeightRatio: 0.7,
+  avatarWithoutBackgroundScale: 1.8,
   minSubtitleFontPx: 34,
   subtitleFontPx: 58,
 } as const;

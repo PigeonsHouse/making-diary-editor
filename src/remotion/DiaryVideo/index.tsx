@@ -2,7 +2,7 @@
 
 import "@fontsource-variable/noto-sans-jp";
 import { useMemo } from "react";
-import { AbsoluteFill, Audio, Sequence, useVideoConfig } from "remotion";
+import { AbsoluteFill, Html5Audio, Sequence, useVideoConfig } from "remotion";
 import { getBgmVolume, groupContinuousBgm, resolveAudioOverride, type AudioScene } from "@/domain/audio";
 import { createBgmMutedSections } from "@/domain/bgm-mute";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
@@ -128,7 +128,7 @@ export function DiaryVideo({
         const clip = resolveAudioOverride(project.audio.sceneIntroSe, override, assetVolumes);
         return clip ? (
           <Sequence key={`scene-intro-${scene.key}`} from={scene.from} durationInFrames={scene.duration}>
-            <Audio src={clip.url} volume={clip.volume} />
+            <Html5Audio src={clip.url} volume={clip.volume} />
           </Sequence>
         ) : null;
       }),
@@ -139,7 +139,7 @@ export function DiaryVideo({
     <AbsoluteFill style={{ background: "#f4f6f8", fontFamily: '"Noto Sans JP Variable", sans-serif' }}>
       {bgmSegments.map((segment) => (
         <Sequence key={segment.key} from={segment.from} durationInFrames={segment.duration}>
-          <Audio
+          <Html5Audio
             src={segment.clip.url}
             volume={(frame) => getBgmVolume(segment, frame)}
             loop
