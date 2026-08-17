@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createCharacter, createDialogue } from "./defaults";
-import { calculateBlock, dialogueAudioStartFrame } from "./timeline";
+import { calculateBlock, dialogueAudioStartFrame, getVisibleDialogueCharacterIds } from "./timeline";
 
 const ready = (text: string, duration: number, pause: number | null) => ({
   ...createDialogue(character.id),
@@ -76,5 +76,44 @@ describe("dialogueAudioStartFrame", () => {
 
   it("adds both the preceding blocks and the pause before a dialogue", () => {
     expect(dialogueAudioStartFrame(183, 0.5, 30)).toBe(198);
+  });
+});
+
+describe("getVisibleDialogueCharacterIds", () => {
+  it("keeps the previous speaker active during the pause before the next dialogue", () => {
+    const secondCharacter = createCharacter();
+    const result = calculateBlock(
+      {
+        id: crypto.randomUUID(),
+        title: "",
+        asset: null,
+        durationSeconds: null,
+        endHoldSeconds: 0.5,
+        dialogues: [ready("A", 1, null), { ...ready("B", 1, 1), characterId: secondCharacter.id }],
+      },
+      [character, secondCharacter],
+    );
+
+    expect(getVisibleDialogueCharacterIds(result.dialogues, 1.5)).toEqual([character.id]);
+    expect(getVisibleDialogueCharacterIds(result.dialogues, 2.1)).toEqual([secondCharacter.id]);
+  });
+
+  it("keeps a character active for the same period as its subtitle", () => {
+    const secondCharacter = createCharacter();
+    const dialogues = [
+      { dialogue: ready("A", 2, null), start: 0, audioEnd: 2, displayEnd: 3, overlapGroup: 0 },
+      {
+        dialogue: { ...ready("B", 2, null), characterId: secondCharacter.id },
+        start: 1,
+        audioEnd: 3,
+        displayEnd: 4,
+        overlapGroup: 0,
+      },
+    ];
+
+    expect(getVisibleDialogueCharacterIds(dialogues, 2.5)).toEqual([character.id, secondCharacter.id]);
+    expect(getVisibleDialogueCharacterIds(dialogues, 3)).toEqual([character.id, secondCharacter.id]);
+    expect(getVisibleDialogueCharacterIds(dialogues, 3.5)).toEqual([secondCharacter.id]);
+    expect(getVisibleDialogueCharacterIds(dialogues, 4.1)).toEqual([]);
   });
 });

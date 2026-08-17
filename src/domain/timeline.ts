@@ -22,6 +22,16 @@ export function dialogueAudioStartFrame(blockStartFrame: number, dialogueStartSe
   return blockStartFrame + Math.round(dialogueStartSeconds * fps);
 }
 
+export function getVisibleDialogueCharacterIds(dialogues: TimedDialogue[], seconds: number): string[] {
+  return [
+    ...new Set(
+      dialogues
+        .filter((item) => seconds >= item.start && seconds <= item.displayEnd)
+        .map((item) => item.dialogue.characterId),
+    ),
+  ];
+}
+
 const characterMap = (characters: Character[]) => new Map(characters.map((character) => [character.id, character]));
 
 const isPositiveFinite = (value: number | null | undefined): value is number =>

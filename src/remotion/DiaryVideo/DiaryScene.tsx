@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { AbsoluteFill, Html5Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { resolveSoundEffect } from "@/domain/audio";
 import { EDITOR_CONSTANTS } from "@/domain/defaults";
-import { calculateBlock } from "@/domain/timeline";
+import { calculateBlock, getVisibleDialogueCharacterIds } from "@/domain/timeline";
 import type { DiaryEntry } from "@/domain/types";
 import { AssetBackground } from "../AssetBackground";
 import { Avatars } from "../Avatars";
@@ -51,6 +51,10 @@ export function DiaryScene({
     frame >= introFrames && activeEntry
       ? activeEntry.timing.dialogues.filter((item) => blockSeconds >= item.start).map((item) => item.dialogue)
       : [];
+  const speakingCharacterIds =
+    frame >= introFrames && activeEntry
+      ? getVisibleDialogueCharacterIds(activeEntry.timing.dialogues, blockSeconds)
+      : [];
   const contentSoundEffects = useMemo(
     () =>
       blockTimeline.map(({ block, from }) => {
@@ -79,6 +83,7 @@ export function DiaryScene({
         project={project}
         characters={characters}
         startedDialogues={startedDialogues}
+        speakingCharacterIds={speakingCharacterIds}
         dialoguePsdPreviewUrls={dialoguePsdPreviewUrls}
         enlargeWithoutBackground={frame >= introFrames && !activeBlock?.asset}
       />

@@ -11,15 +11,18 @@ export function Avatars({
   project,
   characters,
   startedDialogues,
+  speakingCharacterIds,
   dialoguePsdPreviewUrls,
   enlargeWithoutBackground,
 }: {
   project: ProjectDocument;
   characters: Character[];
   startedDialogues: Dialogue[];
+  speakingCharacterIds: string[];
   dialoguePsdPreviewUrls?: Record<string, string>;
   enlargeWithoutBackground: boolean;
 }) {
+  const hasActiveSpeaker = speakingCharacterIds.length > 0;
   const { selected, positions } = useMemo(() => {
     const charactersById = new Map(characters.map((character) => [character.id, character]));
     const nextSelected = project.characterIds.map((id) => charactersById.get(id)).filter(Boolean) as Character[];
@@ -45,6 +48,7 @@ export function Avatars({
       {selected.map((character, index) => {
         const { side, level, top, edgeOffsetXPx, scale } = positions[index];
         const flipped = isAvatarFlipped(index, project.characterAvatarOverrides[character.id]?.flipHorizontal);
+        const isInactive = hasActiveSpeaker && !speakingCharacterIds.includes(character.id);
         const avatarUrl = resolveDialogueAvatarUrl(
           character.avatar.previewUrl,
           character.id,
@@ -63,6 +67,7 @@ export function Avatars({
               height: `${EDITOR_CONSTANTS.avatarHeightRatio * 100 * scale}%`,
               zIndex: 10 - level,
               transform: flipped ? "scaleX(-1)" : undefined,
+              filter: isInactive ? "grayscale(45%) brightness(85%)" : undefined,
             }}
           />
         );
